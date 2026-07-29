@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flights Database</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <section class="header-stats">
+    <div class="header-left">
+      <h1>✈ Flight Log</h1>
+      <button id="exportJson">Export</button>
+      <label class="file-button" id="importLabel">Import <input id="importJson" type="file" accept="application/json"></label>
+      <div id="authBar">
+        <span id="authStatus"></span>
+        <button id="signInBtn">Sign in</button>
+        <button id="signOutBtn" class="hidden sec">Sign out</button>
+      </div>
+    </div>
+    <div id="statCards"></div>
+  </section>
+
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="entry">Data entry</button>
+  </nav>
+
+  <main>
+    <section id="dashboard" class="panel active">
+      <div class="dash-grid">
+        <div class="panel-side">
+          <div class="panel-head">Flights by year</div>
+          <table class="year-table">
+            <tbody id="byYear"></tbody>
+          </table>
+        </div>
+        <div class="panel-main" id="yearDetails">
+          <div class="panel-head">
+            <span id="yearDetailsTitle">Select a year</span>
+            <button id="closeYearDetails" type="button">Clear</button>
+          </div>
+          <div class="table-scroll">
+            <table class="flight-table">
+              <thead>
+                <tr><th>Date</th><th>Dep</th><th>Arr</th><th>Airport</th><th>City</th><th>Country</th><th>Airline</th><th>Aircraft</th></tr>
+              </thead>
+              <tbody id="yearFlightRows">
+                <tr><td colspan="8">Click a year on the left to show its flights here.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="entry" class="panel">
+      <div class="form-panel">
+        <div class="panel-head">Add / Edit flight</div>
+        <form id="flightForm" class="form-grid">
+          <input type="hidden" id="flightId">
+          <div class="form-group">
+            <label for="date">Date</label>
+            <input id="date" type="date" required>
+          </div>
+          <div class="form-group">
+            <label for="departure">Departure</label>
+            <input id="departure" maxlength="4" required placeholder="AMS">
+          </div>
+          <div class="form-group">
+            <label for="arrival">Arrival</label>
+            <input id="arrival" maxlength="4" required placeholder="PHL">
+            <div id="arrivalCity" class="city-hint"></div>
+          </div>
+          <div class="form-group">
+            <label for="airline">Airline</label>
+            <input id="airline" placeholder="Airline">
+          </div>
+          <div class="form-group">
+            <label for="aircraft">Aircraft</label>
+            <input id="aircraft" placeholder="Aircraft">
+          </div>
+          <div class="form-actions">
+            <button type="submit">Save</button>
+            <button type="button" id="deleteFlight" class="danger hidden">Delete</button>
+            <button type="button" id="clearFlight" class="sec">Clear</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="dash-grid">
+        <div class="panel-side">
+          <div class="panel-head">Search</div>
+          <div class="search-wrap">
+            <input id="flightSearch" class="search-input" placeholder="Search flights...">
+          </div>
+        </div>
+        <div class="panel-main">
+          <div class="panel-head"><span>All flights</span></div>
+          <div class="table-scroll">
+            <table class="flight-table">
+              <thead>
+                <tr><th>Date</th><th>Dep</th><th>Arr</th><th>Airport</th><th>City</th><th>Country</th><th>Airline</th><th>Aircraft</th></tr>
+              </thead>
+              <tbody id="flightRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="seed-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+[
+  {
+    "iata": "AMS",
+    "country": "Netherlands"
+  },
+  {
+    "iata": "PHL",
+    "country": "USA"
+  },
+  {
+    "iata": "SEA",
+    "country": "USA"
+  },
+  {
+    "iata": "SFO",
+    "country": "USA"
+  },
+  {
+    "iata": "TPE",
+    "country": "Taiwan"
+  },
+  {
+    "iata": "KBV",
+    "country": "Thailand"
+  },
+  {
+    "iata": "BKK",
+    "country": "Thailand"
+  },
+  {
+    "iata": "DOH",
+    "country": "Qatar"
+  },
+  {
+    "iata": "ATH",
+    "country": "Greece"
+  },
+  {
+    "iata": "BCN",
+    "country": "Spain"
+  },
+  {
+    "iata": "TFS",
+    "country": "Spain"
+  },
+  {
+    "iata": "CRL",
+    "country": "Belgium"
+  },
+  {
+    "iata": "HER",
+    "country": "Greece"
+  },
+  {
+    "iata": "MIL",
+    "country": "Italy"
+  },
+  {
+    "iata": "CMN",
+    "country": "Morocco"
+  },
+  {
+    "iata": "FEZ",
+    "country": "Morocco"
+  },
+  {
+    "iata": "BRU",
+    "country": "Belgium"
+  },
+  {
+    "iata": "EWR",
+    "country": "USA"
+  },
+  {
+    "iata": "CHQ",
+    "country": "Greece"
+  },
+  {
+    "iata": "CDG",
+    "country": "France"
+  },
+  {
+    "iata": "VLC",
+    "country": "Spain"
+  },
+  {
+    "iata": "HKG",
+    "country": "China"
+  },
+  {
+    "iata": "YYZ",
+    "country": "Canada"
+  },
+  {
+    "iata": "YEG",
+    "country": "Canada"
+  },
+  {
+    "iata": "FRA",
+    "country": "Germany"
+  },
+  {
+    "iata": "BDS",
+    "country": "Italy"
+  },
+  {
+    "iata": "BVA",
+    "country": "France"
+  },
+  {
+    "iata": "ROM",
+    "country": "Italy"
+  },
+  {
+    "iata": "TRN",
+    "country": "Italy"
+  },
+  {
+    "iata": "OPO",
+    "country": "Portugal"
+  },
+  {
+    "iata": "IST",
+    "country": "Turkey"
+  },
+  {
+    "iata": "DPS",
+    "country": "Indonesia"
+  },
+  {
+    "iata": "DMK",
+    "country": "Thailand"
+  },
+  {
+    "iata": "BLQ",
+    "country": "Italy"
+  },
+  {
+    "iata": "BUD",
+    "country": "Hungary"
+  },
+  {
+    "iata": "SGN",
+    "country": "Vietnam"
+  },
+  {
+    "iata": "CNX",
+    "country": "Thailand"
+  },
+  {
+    "iata": "KUL",
+    "country": "Malaysia"
+  },
+  {
+    "iata": "LHR",
+    "country": "UK"
+  },
+  {
+    "iata": "HAN",
+    "country": "Vietnam"
+  },
+  {
+    "iata": "CUN",
+    "country": "Mexico"
+  },
+  {
+    "iata": "OXA",
+    "country": "Mexico"
+  },
+  {
+    "iata": "MEX",
+    "country": "Mexico"
+  },
+  {
+    "iata": "PXM",
+    "country": "Mexico"
+  },
+  {
+    "iata": "IAD",
+    "country": "USA"
+  },
+  {
+    "iata": "DEN",
+    "country": "USA"
+  },
+  {
+    "iata": "DFW",
+    "country": "USA"
+  },
+  {
+    "iata": "PUJ",
+    "country": "Dominican Rep"
+  },
+  {
+    "iata": "DAL",
+    "country": "USA"
+  },
+  {
+    "iata": "ATL",
+    "country": "USA"
+  },
+  {
+    "iata": "RDU",
+    "country": "USA"
+  },
+  {
+    "iata": "BOS",
+    "country": "USA"
+  },
+  {
+    "iata": "LIS",
+    "country": "Portugal"
+  },
+  {
+    "iata": "JFK",
+    "country": "USA"
+  },
+  {
+    "iata": "MAD",
+    "country": "Spain"
+  },
+  {
+    "iata": "ORD",
+    "country": "USA"
+  },
+  {
+    "iata": "AGP",
+    "country": "Spain"
+  },
+  {
+    "iata": "ZRH",
+    "country": "Switzerland"
+  },
+  {
+    "iata": "NRT",
+    "country": "Japan"
+  },
+  {
+    "iata": "HND",
+    "country": "Japan"
+  },
+  {
+    "iata": "ITM",
+    "country": "Japan"
+  },
+  {
+    "iata": "UKB",
+    "country": "Japan"
+  }
+]
