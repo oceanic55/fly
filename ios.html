@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>✈ FLY</title>
+  <style>
+    /* ── CSS variables ─────────────────────────────── */
+    :root {
+      --bg:        #1e2a3d;
+      --bg-top:    #1b2536;
+      --panel:     #2b3c59;
+      --panel-2:   #32466b;
+      --panel-3:   #3a5078;
+      --line:      #4a5c79;
+      --line-soft: #3d4f6b;
+      --text:      #e3e9f2;
+      --muted:     #b2bfd1;
+      --dim:       #8596ad;
+      --accent:    #4784c7;
+      --accent-2:  #5d9ad6;
+      --danger:    #b85c5c;
+      --nav-h:     58px;
+      --safe-b:    env(safe-area-inset-bottom, 0px);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+    html { height: 100%; }
+    body {
+      height: 100%; background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text); display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      /* reserve space for bottom nav + safe area */
+      padding-bottom: calc(var(--nav-h) + var(--safe-b));
+    }
+
+    /* ── Header ────────────────────────────────────── */
+    .ios-header {
+      display: flex; align-items: center;
+      padding: 10px 14px 10px;
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      background: var(--bg-top);
+      border-bottom: 1px solid var(--line);
+      gap: 8px; flex-shrink: 0;
+    }
+    .ios-header h1 {
+      font-size: 15px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .4px; flex: 1;
+    }
+    .ios-header button, .ios-header .file-button {
+      background: var(--panel); border: 1px solid var(--line); color: var(--text);
+      padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ios-header .file-button { display: inline-flex; align-items: center; }
+    .ios-header .file-button input { display: none; }
+    .ios-header .auth-btn { font-size: 11px; padding: 5px 10px; }
+    #authStatus {
+      font-size: 11px; color: var(--muted); white-space: nowrap;
+      max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── Stat chips: scrollable horizontal strip ──── */
+    #statCards {
+      display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; background: var(--bg-top);
+      border-bottom: 1px solid var(--line); flex-shrink: 0;
+    }
+    #statCards::-webkit-scrollbar { display: none; }
+    .stat-chip {
+      flex-shrink: 0; text-align: center;
+      padding: 8px 18px; border-right: 1px solid var(--line);
+    }
+    .stat-chip:last-child { border-right: none; }
+    .stat-chip strong { display: block; font-size: 22px; font-weight: 700; line-height: 1.1; }
+    .stat-chip span { display: block; margin-top: 1px; color: var(--muted); font-size: 11px; }
+
+    /* ── Main / panels ─────────────────────────────── */
+    main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .panel { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .panel.active { display: flex; }
+
+    /* ── Year pills ────────────────────────────────── */
+    .year-pills-wrap {
+      display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding: 10px 12px; scrollbar-width: none; flex-shrink: 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .year-pills-wrap::-webkit-scrollbar { display: none; }
+    .year-pill {
+      flex-shrink: 0; padding: 6px 16px; border: 1px solid var(--line);
+      background: var(--panel); color: var(--muted); font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; border-radius: 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .year-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Flight cards ──────────────────────────────── */
+    .flight-cards {
+      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .flight-card {
+      background: var(--panel); border: 1px solid var(--line);
+      padding: 12px 14px; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .15s, border-color .15s;
+    }
+    .flight-card:active { background: var(--panel-2); }
+    .flight-card.editing {
+      background: rgba(71,132,199,.22);
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px rgba(71,132,199,.18);
+    }
+    .fc-route {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 20px; font-weight: 700; margin-bottom: 5px;
+    }
+    .fc-arrow { color: var(--accent-2); font-size: 15px; font-weight: 400; }
+    .fc-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 3px; }
+    .fc-meta span { font-size: 12px; color: var(--muted); }
+    .fc-meta strong { color: var(--text); font-weight: 600; }
+    .fc-airport { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .no-flights { padding: 24px 14px; color: var(--dim); font-size: 13px; text-align: center; }
+    .detail-back { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+    .flight-detail { background: var(--panel); border: 1px solid var(--line); padding: 14px; }
+    .flight-detail .flight-card { cursor: default; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .detail-item { border-top: 1px solid var(--line-soft); padding-top: 8px; }
+    .detail-label { display: block; color: var(--dim); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .detail-value { display: block; margin-top: 3px; font-size: 14px; }
+
+    /* ── Entry tab: search bar ─────────────────────── */
+    .search-bar-wrap {
+      padding: 10px 12px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+    }
+    .search-bar-wrap input {
+      width: 100%; background: var(--bg-top); border: 1px solid var(--line);
+      padding: 9px 12px; font: inherit; font-size: 14px; color: var(--text); outline: none;
+    }
+    .search-bar-wrap input:focus { border-color: var(--accent); }
+
+    /* ── FAB ───────────────────────────────────────── */
+    .fab {
+      position: fixed;
+      bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
+      right: 20px;
+      width: 54px; height: 54px;
+      background: var(--accent); border: none; color: #fff;
+      font-size: 28px; font-weight: 300; cursor: pointer;
+      box-shadow: 0 4px 18px rgba(0,0,0,.45);
+      border-radius: 2px; z-index: 80; display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fab:active { background: var(--accent-2); }
+
+    /* ── Bottom sheet ──────────────────────────────── */
+    .sheet-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 88;
+    }
+    .sheet-backdrop.active { display: block; }
+
+    .form-sheet {
+      position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + var(--safe-b));
+      background: var(--bg); border-top: 2px solid var(--line);
+      z-index: 89;
+      display: flex; flex-direction: column;
+      /* max-height is updated by JS via --sheet-max-h to track visualViewport */
+      max-height: var(--sheet-max-h, 92vh);
+      height: var(--sheet-max-h, 92vh);
+      transform: translateY(100%); transition: transform .25s ease;
+    }
+    .form-sheet.open { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: var(--line); margin: 10px auto 4px; flex-shrink: 0;
+    }
+    .sheet-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px; flex-shrink: 0;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .4px;
+      border-bottom: 1px solid var(--line);
+    }
+    .sheet-head button { background: transparent; border: none; color: var(--dim); font-size: 22px; cursor: pointer; padding: 0 2px; }
+    .sheet-head button:active { color: var(--text); }
+
+    /* scrollable form body */
+    .sheet-form {
+      flex: 1 1 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      min-height: 0;
+    }
+    .sheet-form .form-group { padding: 12px 16px; border-bottom: 1px solid var(--line-soft); }
+    .sheet-form .form-group label {
+      display: block; font-size: 10px; font-weight: 600; color: var(--dim);
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px;
+    }
+    .sheet-form .form-group input {
+      width: 100%; background: var(--panel); border: 1px solid var(--line);
+      padding: 11px 12px; font: inherit; font-size: 16px; color: var(--text); outline: none;
+    }
+    .sheet-form .form-group input:focus { border-color: var(--accent); }
+    .city-hint { font-size: 11px; color: var(--accent-2); margin-top: 5px; min-height: 1.1em; }
+
+    /* actions always visible at bottom */
+    .sheet-actions {
+      display: flex; gap: 8px; padding: 14px 16px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--line-soft);
+      background: var(--bg);
+    }
+    .sheet-actions button {
+      flex: 1; background: var(--accent); border: 1px solid var(--accent);
+      color: #fff; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sheet-actions button.sec { background: var(--panel); border: 1px solid var(--line); color: var(--text); }
+    .sheet-actions button.danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+
+    /* ── Bottom nav ────────────────────────────────── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--nav-h) + var(--safe-b));
+      background: var(--bg-top); border-top: 1px solid var(--line);
+      display: flex; z-index: 100;
+      padding-bottom: var(--safe-b);
+    }
+    .bnav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; border: none; background: transparent; color: var(--dim);
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;
+      cursor: pointer; border-top: 2px solid transparent; margin-top: -1px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bnav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .bnav-btn.active { color: var(--accent-2); border-top-color: var(--accent-2); }
+
+    /* ── Misc ──────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .clickable-row { cursor: pointer; }
+    #loadingMsg { padding: 20px; color: var(--dim); text-align: center; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <button class="bnav-btn active" data-tab="dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Flights
+    </button>
+    <button class="bnav-btn" data-tab="entry" id="entryNavBtn" aria-label="Add flight">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Data Entry
+    </button>
+  </nav>
+
+  <!-- FAB (entry tab, add new flight — hidden on dashboard) -->
+  <button class="fab hidden" id="fab" aria-label="Add flight">+</button>
+
+  <!-- Sheet backdrop -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+  <!-- Bottom sheet: add/edit form -->
+  <div class="form-sheet" id="formSheet" role="dialog" aria-label="Flight form">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <span id="sheetTitle">Add flight</span>
+    </div>
+    <form class="sheet-form" id="flightForm">
+      <input type="hidden" id="flightId">
+      <div class="form-group">
+        <label for="sDate">Date</label>
+        <input id="sDate" type="date" required autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="sDep">Departure</label>
+        <input id="sDep" maxlength="4" required placeholder="AMS" autocomplete="off" autocapitalize="characters">
+      </div>
+      <div class="form-group">
+        <label for="sArr">Arrival</label>
+        <input id="sArr" maxlength="4" required placeholder="PHL" autocomplete="off" autocapitalize="characters">
+        <div class="city-hint" id="arrivalCity"></div>
+      </div>
+      <div class="form-group">
+        <label for="sAirline">Airline</label>
+        <input id="sAirline" placeholder="KLM" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="sAircraft">Aircraft</label>
+        <input id="sAircraft" placeholder="B737" autocomplete="off">
+      </div>
+    </form>
+    <div class="sheet-actions">
+      <button type="submit" form="flightForm">Save</button>
+      <button type="button" id="deleteFlightBtn" class="danger hidden">Delete</button>
+      <button type="button" id="cancelSheet" class="sec">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="ios-header">
+    <h1>✈ FLY</h1>
+    <button id="exportJson" title="Export">Export</button>
+    <label class="file-button" id="importLabel" title="Import">
+      Import <input id="importJson" type="file" accept="application/json">
+    </label>
+    <span id="authStatus"></span>
+    <button id="signInBtn" class="auth-btn">Sign in</button>
+    <button id="signOutBtn" class="auth-btn hidden">Sign out</button>
+  </header>
+
+  <!-- Stat chips -->
+  <div id="statCards"></div>
+
+  <main>
+    <!-- Dashboard panel -->
+    <section id="dashboard" class="panel active">
+      <div class="year-pills-wrap" id="yearPills"></div>
+      <div class="flight-cards" id="dashCards">
+        <p id="loadingMsg">Loading…</p>
+      </div>
+    </section>
+
+    <!-- Entry panel -->
+    <section id="entry" class="panel">
+      <div class="search-bar-wrap">
+        <input id="entrySearch" type="search" placeholder="Search flights…" autocomplete="off">
+      </div>
+      <div class="flight-cards" id="entryCards"></div>
+    </section>
+  </main>
+
+  <!-- shared data -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="seed-data.js"></script>
+  <script>
+
+  // ── Supabase ──────────────────────────────────────────────────────────────
+  const SUPABASE_URL     = 'https://sswwadgaygrbadqcgyxq.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzd3dhZGdheWdyYmFkcWNneXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMTY1NzIsImV4cCI6MjEwMDg5MjU3Mn0.cJ5EZD1Pinfx-Vqp_j_9vU_44uV-0lw4kSxKpjED70w'
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  // ── App state ─────────────────────────────────────────────────────────────
+  const STORE_KEY = 'flights-db-v1'
+  let flights  = []
+  let airports = []
+  let _session = null
+  let _activeYear = null
+  let _dashDetailId = null
+  let _editId  = null
+
+  const $  = id => document.getElementById(id)
+  const esc = v => String(v||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+  const normCode = v => String(v||'').trim().toUpperCase()
+  const normText = v => String(v||'').trim()
+  const unique   = arr => [...new Set(arr.filter(Boolean))]
+
+  // ── Persistence ───────────────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const [{ data: rf, error: fe }, { data: ra, error: ae }] = await Promise.all([
+        sb.from('flights').select('*').order('date', { ascending: false }),
+        sb.from('airports').select('*').order('iata'),
+      ])
+      if (!fe && !ae && rf && ra) {
+        flights  = rf
+        airports = mergeAirports(ra)
+        localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
+        return
+      }
+    } catch (_) {}
+    // offline fallback
+    const saved = localStorage.getItem(STORE_KEY)
+    if (saved) {
+      const p = JSON.parse(saved)
+      flights  = p.flights  || []
+      airports = mergeAirports(p.airports || [])
+      return
+    }
+    flights  = [...window.SEED_DATA.flights]
+    airports = [...window.SEED_DATA.airports]
+  }
+
+  function mergeAirports(saved) {
+    const seedMap = new Map(window.SEED_DATA.airports.map(a => [normCode(a.iata), a]))
+    const merged  = saved.map(a => ({ ...seedMap.get(normCode(a.iata)), ...a }))
+    const codes   = new Set(merged.map(a => normCode(a.iata)))
+    for (const a of window.SEED_DATA.airports) if (!codes.has(normCode(a.iata))) merged.push(a)
+    return merged
+  }
+
+  async function saveData() {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
+    if (!_session) return
+    const [{ error: fe }, { error: ae }] = await Promise.all([
+      sb.from('flights').upsert(flights),
+      sb.from('airports').upsert(airports),
+    ])
+    if (fe) console.error('flights upsert:', fe.message)
+    if (ae) console.error('airports upsert:', ae.message)
+  }
+
+  async function deleteFlightById(id) {
+    flights = flights.filter(f => f.id !== id)
+    localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
+    if (!_session) return
+    const { error } = await sb.from('flights').delete().eq('id', id)
+    if (error) console.error('delete:', error.message)
+  }
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  async function initAuth() {
+    const { data: { session } } = await sb.auth.getSession()
+    _session = session
+    applyAuthUI(session)
+    sb.auth.onAuthStateChange((_e, s) => { _session = s; applyAuthUI(s); renderAll() })
+    $('signInBtn').addEventListener('click', () =>
+      sb.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: location.href } }))
+    $('signOutBtn').addEventListener('click', () => sb.auth.signOut())
+  }
+
+  function applyAuthUI(session) {
+    const ok = !!session
+    $('authStatus').textContent = ok ? (session.user.user_metadata.user_name ?? session.user.email) : ''
+    $('signInBtn').classList.toggle('hidden', ok)
+    $('signOutBtn').classList.toggle('hidden', !ok)
+    $('importLabel').classList.toggle('hidden', !ok)
+    // write UI always visible — auth only gates remote sync, not local use
+  }
+
+  // ── Real-time ─────────────────────────────────────────────────────────────
+  function subscribeRealtime() {
+    sb.channel('ios-flights')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'flights' }, async () => {
+        const { data, error } = await sb.from('flights').select('*').order('date', { ascending: false })
+        if (!error && data) {
+          flights = data
+          localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
+          renderAll()
+        }
+      })
+      .subscribe()
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  function buildAirportMap() { return new Map(airports.map(a => [normCode(a.iata), a])) }
+
+  function calcStats() {
+    const amap = buildAirportMap()
+    const valid = flights.filter(f => f.date || f.departure || f.arrival)
+    const byYear = {}
+    for (const f of valid) {
+      const y = f.date ? new Date(f.date + 'T00:00:00').getFullYear() : null
+      if (y) byYear[y] = (byYear[y] || 0) + 1
+    }
+    return {
+      total:    valid.length,
+      airports: unique(valid.flatMap(f => [normCode(f.departure), normCode(f.arrival)])).length,
+      countries:unique(valid.map(f => amap.get(normCode(f.arrival))?.country)).length,
+      airlines: unique(valid.map(f => normText(f.airline).toUpperCase())).length,
+      aircraft: unique(valid.map(f => normText(f.aircraft))).length,
+      byYear,
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function renderStats() {
+    const s = calcStats()
+    $('statCards').innerHTML = [
+      [s.total,     'Flights'],
+      [s.airports,  'Airports'],
+      [s.countries, 'Countries'],
+      [s.airlines,  'Airlines'],
+      [s.aircraft,  'Aircraft'],
+    ].map(([v, l]) => `<div class="stat-chip"><strong>${v}</strong><span>${l}</span></div>`).join('')
+  }
+
+  function renderYearPills() {
+    const s = calcStats()
+    const years = Object.keys(s.byYear).map(Number).sort((a, b) => b - a)
+    if (!years.length) { $('yearPills').innerHTML = ''; return }
+    if (!_activeYear || !years.includes(_activeYear)) _activeYear = years[0]
+    $('yearPills').innerHTML = years.map(y =>
+      `<button class="year-pill${y === _activeYear ? ' active' : ''}" data-year="${y}">${y} · ${s.byYear[y]}</button>`
+    ).join('')
+  }
+
+  function flightCard(f) {
+    const amap = buildAirportMap()
+    const arr  = amap.get(normCode(f.arrival))   || {}
+    const dep  = amap.get(normCode(f.departure)) || {}
+
+    // Strip redundant "Airport", shorten "International" → "Intl"
+    const shortName = n => (n || '')
+      .replace(/\bInternational\b/gi, 'Intl')
+      .replace(/\bAirport\b/gi, '')
+      .replace(/\s{2,}/g, ' ').trim().replace(/,\s*$/, '').trim()
+
+    const depShort = shortName(dep.name)
+    const arrShort = shortName(arr.name)
+    const arrCity  = [arrShort, arr.city, arr.country].filter(Boolean).join(', ')
+    const depCity  = depShort || ''
+
+    // "Frankfurt Intl → Valencia, Valencia, Spain"
+    const locationLine = depCity
+      ? `${depCity} → ${arrCity || f.arrival}`
+      : (arrCity || '')
+
+    return `<div class="flight-card" data-flight-id="${esc(f.id)}">
+      <div class="fc-route">
+        <span>${esc(f.departure)}</span>
+        <span class="fc-arrow">→</span>
+        <span>${esc(f.arrival)}</span>
+      </div>
+      <div class="fc-meta">
+        <span><strong>${esc(f.date)}</strong></span>
+        ${f.airline  ? `<span>${esc(f.airline)}</span>` : ''}
+        ${f.aircraft ? `<span>${esc(f.aircraft)}</span>` : ''}
+      </div>
+      ${locationLine ? `<div class="fc-airport">${esc(locationLine)}</div>` : ''}
+    </div>`
+  }
+
+  function renderDashCards() {
+    const year  = _activeYear
+    const cards = year ? flights.filter(f => f.date && new Date(f.date + 'T00:00:00').getFullYear() === year) : []
+    if (_dashDetailId) {
+      const f = cards.find(x => x.id === _dashDetailId) || flights.find(x => x.id === _dashDetailId)
+      $('dashCards').innerHTML = f ? flightDetail(f) : `<p class="no-flights">Flight not found.</p>`
+      return
+    }
+    $('dashCards').innerHTML = cards.length
+      ? cards.map(flightCard).join('')
+      : `<p class="no-flights">${year ? 'No flights for ' + year + '.' : 'Select a year above.'}</p>`
+  }
+
+  function flightDetail(f) {
+    const amap = buildAirportMap()
+    const dep = amap.get(normCode(f.departure)) || {}
+    const arr = amap.get(normCode(f.arrival)) || {}
+    const full = ap => [ap.name, ap.city, ap.country].filter(Boolean).join(', ') || '—'
+    return `<button class="detail-back" id="dashBackBtn">← Back</button>
+      <div class="flight-detail">
+        ${flightCard(f)}
+        <div class="detail-grid">
+          <div class="detail-item"><span class="detail-label">Date</span><span class="detail-value">${esc(f.date || '—')}</span></div>
+          <div class="detail-item"><span class="detail-label">Airline</span><span class="detail-value">${esc(f.airline || '—')}</span></div>
+          <div class="detail-item"><span class="detail-label">Aircraft</span><span class="detail-value">${esc(f.aircraft || '—')}</span></div>
+          <div class="detail-item"><span class="detail-label">Departure airport</span><span class="detail-value">${esc(full(dep))}</span></div>
+          <div class="detail-item"><span class="detail-label">Arrival airport</span><span class="detail-value">${esc(full(arr))}</span></div>
+        </div>
+      </div>`
+  }
+
+  function renderEntryCards(q = '') {
+    const lq = q.toLowerCase()
+    const amap = buildAirportMap()
+    const rows = flights.filter(f => {
+      if (!lq) return true
+      const arr = amap.get(normCode(f.arrival))  || {}
+      const dep = amap.get(normCode(f.departure)) || {}
+      const hay = (JSON.stringify(f) + ' ' + [dep.city, dep.name, arr.city, arr.name, arr.country].join(' ')).toLowerCase()
+      return hay.includes(lq)
+    })
+    $('entryCards').innerHTML = rows.length
+      ? rows.map(flightCard).join('')
+      : `<p class="no-flights">${lq ? 'No matches.' : 'No flights yet.'}</p>`
+  }
+
+  function renderAll() {
+    renderStats()
+    renderYearPills()
+    renderDashCards()
+    renderEntryCards($('entrySearch').value)
+  }
+
+  // ── Sheet helpers ─────────────────────────────────────────────────────────
+  function openSheet(editId = null) {
+    _editId = editId
+    const f = editId ? flights.find(x => x.id === editId) : null
+    $('sheetTitle').textContent = f ? 'Edit flight' : 'Add flight'
+    $('flightId').value    = f ? f.id        : ''
+    $('sDate').value       = f ? f.date      : ''
+    $('sDep').value        = f ? f.departure : ''
+    $('sArr').value        = f ? f.arrival   : ''
+    $('sAirline').value    = f ? f.airline   : ''
+    $('sAircraft').value   = f ? f.aircraft  : ''
+    updateCityHint()
+    $('deleteFlightBtn').classList.toggle('hidden', !f)
+
+    // Highlight the tapped card immediately. The open sheet reduces the visible
+    // area, so center it again after the sheet animation completes.
+    document.querySelectorAll('.flight-card.editing').forEach(el => el.classList.remove('editing'))
+    let editingCard = null
+    if (editId) {
+      const card = document.querySelector(`#entryCards [data-flight-id="${CSS.escape(editId)}"]`)
+      if (card) {
+        card.classList.add('editing')
+        editingCard = card
+      }
+    }
+
+    $('formSheet').classList.add('open')
+    $('sheetBackdrop').classList.add('active')
+    if (editingCard) setTimeout(() => editingCard.scrollIntoView({ behavior: 'smooth', block: 'center' }), 280)
+    // focus first empty field after sheet animation completes
+    setTimeout(() => { if (!$('sDate').value) $('sDate').focus() }, 280)
+  }
+
+  function closeSheet() {
+    $('formSheet').classList.remove('open')
+    $('sheetBackdrop').classList.remove('active')
+    document.querySelectorAll('.flight-card.editing').forEach(el => el.classList.remove('editing'))
+  }
+
+  function updateCityHint() {
+    const code = normCode($('sArr').value)
+    const ap   = buildAirportMap().get(code)
+    $('arrivalCity').textContent = ap ? [ap.city, ap.country].filter(Boolean).join(', ') : ''
+  }
+
+  // ── Airport lookup ────────────────────────────────────────────────────────
+  async function ensureAirport(iata) {
+    if (!iata || buildAirportMap().has(iata)) return
+    const found = await lookupWikidata(iata)
+    if (found) { airports.push(found); return }
+    const country = prompt(`No data for ${iata}. Enter country (or blank to skip):`)
+    if (!country) return
+    airports.push({
+      iata,
+      name:    normText(prompt(`Airport name for ${iata}?`, '') || ''),
+      city:    normText(prompt(`City for ${iata}?`, '') || ''),
+      country: normText(country),
+    })
+  }
+
+  async function lookupWikidata(iata) {
+    try {
+      const q = `SELECT ?airport ?airportLabel ?cityLabel ?countryLabel WHERE {
+        ?airport wdt:P238 "${iata}".
+        OPTIONAL { ?airport wdt:P931 ?city. }
+        OPTIONAL { ?airport wdt:P17 ?country. }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      } LIMIT 1`
+      const res = await fetch(
+        `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(q)}`,
+        { headers: { Accept: 'application/sparql-results+json' } }
+      )
+      if (!res.ok) return null
+      const data = await res.json()
+      const r = data.results?.bindings?.[0]
+      if (!r?.countryLabel?.value) return null
+      return { iata, name: normText(r.airportLabel?.value), city: normText(r.cityLabel?.value), country: normText(r.countryLabel.value) }
+    } catch { return null }
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.panel').forEach(el => el.classList.toggle('active', el.id === name))
+    document.querySelectorAll('.bnav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name))
+    // FAB only on the entry (search/all flights) tab
+    $('fab').classList.toggle('hidden', name !== 'entry')
+  }
+
+  // ── Wire events ───────────────────────────────────────────────────────────
+  function wireEvents() {
+    // bottom nav
+    document.querySelectorAll('.bnav-btn').forEach(b =>
+      b.addEventListener('click', () => switchTab(b.dataset.tab)))
+
+    // year pills (delegated)
+    $('yearPills').addEventListener('click', e => {
+      const pill = e.target.closest('.year-pill')
+      if (!pill) return
+      _activeYear = parseInt(pill.dataset.year, 10)
+      _dashDetailId = null
+      renderYearPills()
+      renderDashCards()
+    })
+
+    // dashboard card click → detail view
+    $('dashCards').addEventListener('click', e => {
+      if (e.target.closest('#dashBackBtn')) {
+        _dashDetailId = null
+        renderDashCards()
+        return
+      }
+      const card = e.target.closest('[data-flight-id]')
+      if (!card || _dashDetailId) return
+      _dashDetailId = card.dataset.flightId
+      renderDashCards()
+    })
+
+    // entry card click → edit
+    document.addEventListener('click', e => {
+      const card = e.target.closest('#entryCards [data-flight-id]')
+      if (card) openSheet(card.dataset.flightId)
+    })
+
+    // FAB
+    $('fab').addEventListener('click', () => openSheet())
+
+    // sheet close
+    $('sheetBackdrop').addEventListener('click', closeSheet)
+
+    // arrival city hint
+    $('sArr').addEventListener('input', updateCityHint)
+
+    $('flightForm').addEventListener('focusin', e => {
+      if (e.target.matches('input')) {
+        setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
+      }
+    })
+
+    $('cancelSheet').addEventListener('click', closeSheet)
+
+    // delete
+    $('deleteFlightBtn').addEventListener('click', async () => {
+      const id = $('flightId').value
+      if (!id || !confirm('Delete this flight?')) return
+      closeSheet()
+      await deleteFlightById(id)
+      renderAll()
+    })
+
+    // form submit
+    $('flightForm').addEventListener('submit', async e => {
+      e.preventDefault()
+      const dep = normCode($('sDep').value)
+      const arr = normCode($('sArr').value)
+      await ensureAirport(dep)
+      await ensureAirport(arr)
+      const id = $('flightId').value || `f${Date.now()}`
+      const flight = { id, date: $('sDate').value, departure: dep, arrival: arr,
+                       airline: normText($('sAirline').value), aircraft: normText($('sAircraft').value) }
+      const idx = flights.findIndex(f => f.id === id)
+      if (idx >= 0) flights[idx] = flight; else flights.unshift(flight)
+      await saveData()
+      closeSheet()
+      renderAll()
+    })
+
+    // search
+    $('entrySearch').addEventListener('input', e => renderEntryCards(e.target.value))
+
+    // export
+    $('exportJson').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify({ flights, airports }, null, 2)], { type: 'application/json' })
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'flights-backup.json' })
+      a.click(); URL.revokeObjectURL(a.href)
+    })
+
+    // import
+    $('importJson').addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return
+      const p = JSON.parse(await file.text())
+      flights = p.flights || []; airports = p.airports || []
+      await saveData(); renderAll(); e.target.value = ''
+    })
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────────
+
+  // Keep the form sheet sized to the visual viewport and above the bottom nav.
+  function updateSheetHeight() {
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight
+    const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64
+    document.documentElement.style.setProperty('--sheet-max-h', `${Math.max(260, Math.round(vh - nav - 12))}px`)
+  }
+  updateSheetHeight()
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateSheetHeight)
+    window.visualViewport.addEventListener('scroll', updateSheetHeight)
+  }
+
+  initAuth()
+    .then(() => loadData())
+    .then(() => { subscribeRealtime(); wireEvents(); renderAll() })</script>
+</body>
+</html>

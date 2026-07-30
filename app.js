@@ -14,6 +14,7 @@ const storeKey = 'flights-db-v1'
 let flights = []
 let airports = []
 let selectedYear = null
+let selectedYearFlightId = null
 let _ownerSession = null   // set by initAuth; used by save() and applyAuthUI()
 
 const $ = id => document.getElementById(id)
@@ -112,10 +113,8 @@ function applyAuthUI(session) {
   $('signInBtn').classList.toggle('hidden', isOwner)
   $('signOutBtn').classList.toggle('hidden', !isOwner)
 
-  // Hide write UI for guests
-  const entryTab   = document.querySelector('[data-tab="entry"]')
+  // Import hidden for guests; Data entry tab always visible (local writes work without auth)
   const importLabel = $('importLabel')
-  if (entryTab)    entryTab.classList.toggle('hidden', !isOwner)
   if (importLabel) importLabel.classList.toggle('hidden', !isOwner)
 }
 
@@ -195,20 +194,60 @@ function renderYearDetails(year) {
   selectedYear = year
   const rows = flights.filter(f => flightYear(f) === year)
   $('yearDetailsTitle').textContent = `Flights in ${year}`
+  selectedYearFlightId = null
   $('yearFlightRows').innerHTML = rows.map(f => flightTableRow(f, { clickable: true })).join('')
 }
 
+function renderFlightDetail(id) {
+  const f = flights.find(row => row.id === id)
+  if (!f) return
+  selectedYearFlightId = id
+  const amap = airportMap()
+  const dep = amap.get(normCode(f.departure)) || {}
+  const arr = amap.get(normCode(f.arrival)) || {}
+  const full = ap => [ap.name, ap.city, ap.country].filter(Boolean).join(', ') || '—'
+  $('yearDetailsTitle').textContent = `${f.departure} → ${f.arrival}`
+  $('yearFlightRows').innerHTML = `<tr><td colspan="9">
+    <div class="flight-detail">
+      <button class="detail-back" type="button" data-back-year>← Back</button>
+      <div class="detail-grid">
+        <div class="detail-item"><span class="detail-label">Date</span><span class="detail-value">${escapeHtml(f.date || '—')}</span></div>
+        <div class="detail-item"><span class="detail-label">Airline</span><span class="detail-value">${escapeHtml(f.airline || '—')}</span></div>
+        <div class="detail-item"><span class="detail-label">Aircraft</span><span class="detail-value">${escapeHtml(f.aircraft || '—')}</span></div>
+        <div class="detail-item"><span class="detail-label">Departure airport</span><span class="detail-value">${escapeHtml(full(dep))}</span></div>
+        <div class="detail-item"><span class="detail-label">Arrival airport</span><span class="detail-value">${escapeHtml(full(arr))}</span></div>
+      </div>
+    </div>
+  </td></tr>`
+}
+
+// ─── Airport name formatter ───────────────────────────────────────────────────
+// Removes the word "Airport", shortens "International" → "Intl", trims noise.
+function shortAirportName(name) {
+  if (!name) return ''
+  return name
+    .replace(/\bInternational\b/gi, 'Intl')
+    .replace(/\bAirport\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .replace(/[,\-–]\s*$/, '')
+    .trim()
+}
+
 function flightTableRow(f, options = {}) {
-  const arrivalAirport = airportMap().get(normCode(f.arrival)) || {}
+  const amap = airportMap()
+  const dep  = amap.get(normCode(f.departure)) || {}
+  const arr  = amap.get(normCode(f.arrival))   || {}
   const rowAttrs = options.clickable ? ` class="clickable-row" data-edit-flight="${f.id}"` : ''
   return `
     <tr${rowAttrs}>
       <td>${escapeHtml(f.date)}</td>
       <td>${escapeHtml(f.departure)}</td>
       <td>${escapeHtml(f.arrival)}</td>
-      <td>${escapeHtml(arrivalAirport.name || '')}</td>
-      <td>${escapeHtml(arrivalAirport.city || '')}</td>
-      <td>${escapeHtml(arrivalAirport.country || '')}</td>
+      <td>${escapeHtml(shortAirportName(dep.name))}</td>
+      <td>${escapeHtml(shortAirportName(arr.name))}</td>
+      <td>${escapeHtml(arr.city || '')}</td>
+      <td>${escapeHtml(arr.country || '')}</td>
       <td>${escapeHtml(f.airline)}</td>
       <td>${escapeHtml(f.aircraft)}</td>
     </tr>`
@@ -240,6 +279,7 @@ function clearFlightForm() {
   $('flightForm').reset()
   $('deleteFlight').classList.add('hidden')
   $('arrivalCity').textContent = ''
+  document.querySelectorAll('tr.editing').forEach(el => el.classList.remove('editing'))
 }
 
 function editFlight(id) {
@@ -257,6 +297,17 @@ function editFlight(id) {
   document.querySelector('[data-tab="entry"]').classList.add('active')
   $('entry').classList.add('active')
   window.scrollTo({ top: 0, behavior: 'smooth' })
+
+  // Highlight the clicked row and scroll it into view
+  document.querySelectorAll('tr.editing').forEach(el => el.classList.remove('editing'))
+  // Row may be in either the dashboard year-details table or the entry table
+  setTimeout(() => {
+    const row = document.querySelector(`[data-edit-flight="${CSS.escape(id)}"]`)
+    if (row) {
+      row.classList.add('editing')
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, 50)
 }
 
 function escapeHtml(value) {
@@ -320,14 +371,18 @@ function wireEvents() {
   $('closeYearDetails').addEventListener('click', () => {
     selectedYear = null
     $('yearDetailsTitle').textContent = 'Select a year'
-    $('yearFlightRows').innerHTML = '<tr><td colspan="8">Click a year on the left to show its flights here.</td></tr>'
+    $('yearFlightRows').innerHTML = '<tr><td colspan="9">Click a year on the left to show its flights here.</td></tr>'
   })
 
   document.body.addEventListener('click', event => {
     const year = event.target.dataset.year
-    const editFlightId = event.target.closest('[data-edit-flight]')?.dataset.editFlight
+    const backYear = event.target.closest('[data-back-year]')
+    const dashboardFlightId = event.target.closest('#yearFlightRows [data-edit-flight]')?.dataset.editFlight
+    const entryFlightId = event.target.closest('#flightRows [data-edit-flight]')?.dataset.editFlight
     if (year) renderYearDetails(Number(year))
-    if (editFlightId) editFlight(editFlightId)
+    if (backYear && selectedYear) renderYearDetails(selectedYear)
+    if (dashboardFlightId) renderFlightDetail(dashboardFlightId)
+    if (entryFlightId) editFlight(entryFlightId)
   })
 
   // Export

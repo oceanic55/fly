@@ -212,17 +212,34 @@ main {
   vertical-align: middle;
 }
 .flight-table tbody tr:hover td { background: rgba(71,132,199,.06); }
+.flight-table tbody tr.editing td { background: rgba(71,132,199,.18); outline: 1px solid var(--accent); outline-offset: -1px; }
 .flight-table tbody tr:last-child td { border-bottom: none; }
 
-/* Column widths */
-.flight-table th:nth-child(1), .flight-table td:nth-child(1) { width: 12%; }
-.flight-table th:nth-child(2), .flight-table td:nth-child(2),
-.flight-table th:nth-child(3), .flight-table td:nth-child(3) { width: 7%; }
-.flight-table th:nth-child(4), .flight-table td:nth-child(4) { width: 22%; }
-.flight-table th:nth-child(5), .flight-table td:nth-child(5) { width: 14%; }
-.flight-table th:nth-child(6), .flight-table td:nth-child(6) { width: 10%; }
-.flight-table th:nth-child(7), .flight-table td:nth-child(7) { width: 14%; }
-.flight-table th:nth-child(8), .flight-table td:nth-child(8) { width: 10%; }
+.flight-detail { padding: 18px; }
+.detail-back {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.detail-item { border-top: 1px solid var(--line-soft); padding-top: 8px; }
+.detail-label { display: block; color: var(--dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.detail-value { display: block; margin-top: 4px; font-size: 15px; }
+
+/* Column widths — 9 cols: Date | Dep | Arr | Dep.Airport | Arr.Airport | City | Country | Airline | Aircraft */
+.flight-table th:nth-child(1), .flight-table td:nth-child(1) { width: 10%; }
+.flight-table th:nth-child(2), .flight-table td:nth-child(2) { width:  5%; }
+.flight-table th:nth-child(3), .flight-table td:nth-child(3) { width:  5%; }
+.flight-table th:nth-child(4), .flight-table td:nth-child(4) { width: 16%; }
+.flight-table th:nth-child(5), .flight-table td:nth-child(5) { width: 16%; }
+.flight-table th:nth-child(6), .flight-table td:nth-child(6) { width: 12%; }
+.flight-table th:nth-child(7), .flight-table td:nth-child(7) { width:  9%; }
+.flight-table th:nth-child(8), .flight-table td:nth-child(8) { width: 14%; }
+.flight-table th:nth-child(9), .flight-table td:nth-child(9) { width:  9%; }
 
 /* ---- Data entry form ---- */
 .form-panel {
