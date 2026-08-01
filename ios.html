@@ -239,6 +239,14 @@
     .bnav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
     .bnav-btn.active { color: var(--accent-2); border-top-color: var(--accent-2); }
 
+    /* ── Sync status banner ────────────────────────── */
+    .sync-status {
+      padding: 6px 12px; font-size: 12px;
+      background: var(--panel-2); color: var(--muted);
+      border-bottom: 1px solid var(--line); flex-shrink: 0;
+    }
+    .sync-status.error { background: #4a2b2b; color: #f0b9b9; }
+
     /* ── Misc ──────────────────────────────────────── */
     .hidden { display: none !important; }
     .clickable-row { cursor: pointer; }
@@ -317,6 +325,9 @@
   <!-- Stat chips -->
   <div id="statCards"></div>
 
+  <!-- Sync status -->
+  <div id="syncStatus" class="sync-status hidden" role="status" aria-live="polite"></div>
+
   <main>
     <!-- Dashboard panel -->
     <section id="dashboard" class="panel active">
@@ -360,6 +371,15 @@
   const normText = v => String(v||'').trim()
   const unique   = arr => [...new Set(arr.filter(Boolean))]
 
+  // ── Sync status ────────────────────────────────────────────────────────────
+  function setSyncStatus(message, isError) {
+    const el = $('syncStatus')
+    if (!el) return
+    el.textContent = message
+    el.classList.toggle('hidden', !message)
+    el.classList.toggle('error', !!isError)
+  }
+
   // ── Persistence ───────────────────────────────────────────────────────────
   async function loadData() {
     try {
@@ -371,9 +391,15 @@
         flights  = rf
         airports = mergeAirports(ra)
         localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
+        setSyncStatus('Synced')
         return
       }
-    } catch (_) {}
+      if (_session) {
+        setSyncStatus(`Server read failed: ${(fe || ae).message || 'unknown error'} — showing local data`, true)
+      }
+    } catch (err) {
+      if (_session) setSyncStatus(`Server unavailable: ${err?.message || err} — showing local data`, true)
+    }
     // offline fallback
     const saved = localStorage.getItem(STORE_KEY)
     if (saved) {
@@ -396,21 +422,36 @@
 
   async function saveData() {
     localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
-    if (!_session) return
+    if (!_session) {
+      setSyncStatus('Signed out — changes saved on this device only', true)
+      return false
+    }
     const [{ error: fe }, { error: ae }] = await Promise.all([
       sb.from('flights').upsert(flights),
       sb.from('airports').upsert(airports),
     ])
-    if (fe) console.error('flights upsert:', fe.message)
-    if (ae) console.error('airports upsert:', ae.message)
+    if (fe || ae) {
+      const msg = (fe || ae).message
+      console.error('sync error:', msg)
+      setSyncStatus(`Sync failed: ${msg} — saved on this device only`, true)
+      return false
+    }
+    setSyncStatus('Synced')
+    return true
   }
 
   async function deleteFlightById(id) {
     flights = flights.filter(f => f.id !== id)
     localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
-    if (!_session) return
+    if (!_session) {
+      setSyncStatus('Signed out — delete saved on this device only', true)
+      return
+    }
     const { error } = await sb.from('flights').delete().eq('id', id)
-    if (error) console.error('delete:', error.message)
+    if (error) {
+      console.error('delete:', error.message)
+      setSyncStatus(`Delete failed to sync: ${error.message}`, true)
+    }
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -441,6 +482,7 @@
         if (!error && data) {
           flights = data
           localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
+          setSyncStatus('Synced')
           renderAll()
         }
       })

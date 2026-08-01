@@ -33,10 +33,14 @@ async function loadInitialData() {
       flights  = remoteFlights
       airports = mergeAirportMetadata(remoteAirports)
       localStorage.setItem(storeKey, JSON.stringify({ flights, airports }))
+      setSyncStatus('Synced')
       return
     }
-  } catch (_) {
-    // fall through to offline path
+    if (_ownerSession) {
+      setSyncStatus(`Server read failed: ${(fe || ae).message || 'unknown error'} — showing local data`, true)
+    }
+  } catch (err) {
+    if (_ownerSession) setSyncStatus(`Server unavailable: ${err?.message || err} — showing local data`, true)
   }
 
   // Offline / Supabase unavailable — use localStorage cache, then seed
@@ -61,27 +65,51 @@ function mergeAirportMetadata(savedAirports) {
   return merged
 }
 
+// ─── Sync status ──────────────────────────────────────────────────────────────
+function setSyncStatus(message, isError) {
+  const el = $('syncStatus')
+  if (!el) return
+  el.textContent = message
+  el.classList.toggle('hidden', !message)
+  el.classList.toggle('error', !!isError)
+}
+
 // ─── Persistence ─────────────────────────────────────────────────────────────
 async function save() {
   // Always update the local cache
   localStorage.setItem(storeKey, JSON.stringify({ flights, airports }))
 
   // Remote write — only when authenticated
-  if (!_ownerSession) return
+  if (!_ownerSession) {
+    setSyncStatus('Signed out — changes saved on this device only', true)
+    return false
+  }
   const [{ error: fe }, { error: ae }] = await Promise.all([
     sb.from('flights').upsert(flights),
     sb.from('airports').upsert(airports),
   ])
-  if (fe) console.error('Supabase flights upsert error:', fe.message)
-  if (ae) console.error('Supabase airports upsert error:', ae.message)
+  if (fe || ae) {
+    const msg = (fe || ae).message
+    console.error('Supabase sync error:', msg)
+    setSyncStatus(`Sync failed: ${msg} — saved on this device only`, true)
+    return false
+  }
+  setSyncStatus('Synced')
+  return true
 }
 
 async function deleteFlight(id) {
   flights = flights.filter(f => f.id !== id)
   localStorage.setItem(storeKey, JSON.stringify({ flights, airports }))
-  if (!_ownerSession) return
+  if (!_ownerSession) {
+    setSyncStatus('Signed out — delete saved on this device only', true)
+    return
+  }
   const { error } = await sb.from('flights').delete().eq('id', id)
-  if (error) console.error('Supabase delete error:', error.message)
+  if (error) {
+    console.error('Supabase delete error:', error.message)
+    setSyncStatus(`Delete failed to sync: ${error.message}`, true)
+  }
 }
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -126,6 +154,7 @@ function subscribeRealtime() {
       if (!error && data) {
         flights = data
         localStorage.setItem(storeKey, JSON.stringify({ flights, airports }))
+        setSyncStatus('Synced')
         renderAll()
       }
     })

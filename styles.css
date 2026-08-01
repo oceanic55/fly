@@ -82,6 +82,17 @@ body {
   font-size: 12px;
 }
 
+/* ---- Sync status banner ---- */
+.sync-status {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: var(--panel-2);
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.sync-status.error { background: #4a2b2b; color: #f0b9b9; }
+
 /* ---- Tabs ---- */
 .tabs {
   display: flex; gap: 0;
