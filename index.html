@@ -11,21 +11,20 @@
   <section class="header-stats">
     <div class="header-left">
       <h1>✈ FLY</h1>
-      <button id="exportJson">Export</button>
-      <label class="file-button" id="importLabel">Import <input id="importJson" type="file" accept="application/json"></label>
-      <div id="authBar">
-        <span id="authStatus"></span>
-        <button id="signInBtn">Sign in</button>
-        <button id="signOutBtn" class="hidden sec">Sign out</button>
-      </div>
+      <label class="file-button" id="importLabel">Import <input id="importJson" type="file" accept=".json,.ndjson,.txt,application/json,application/x-ndjson"></label>
+      <button id="saveData" title="Save data files (Ctrl/Cmd+S)">Save</button>
+      <button id="exportJson" title="Download a combined JSON backup">Export backup</button>
     </div>
     <div id="statCards"></div>
   </section>
 
-  <div id="syncStatus" class="sync-status hidden" role="status" aria-live="polite"></div>
+  <div id="fileStatus" class="file-status hidden" role="status" aria-live="polite"></div>
 
   <nav class="tabs" aria-label="Sections">
-    <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab active" data-tab="dashboard">Flights</button>
+    <button class="tab" data-tab="airports">Airports</button>
+    <button class="tab" data-tab="countries">Countries</button>
+    <button class="tab" data-tab="airlines">Airlines</button>
     <button class="tab" data-tab="entry">Data entry</button>
   </nav>
 
@@ -49,9 +48,101 @@
                 <tr><th>Date</th><th>Dep</th><th>Arr</th><th>Dep. Airport</th><th>Arr. Airport</th><th>City</th><th>Country</th><th>Airline</th><th>Aircraft</th></tr>
               </thead>
               <tbody id="yearFlightRows">
-                <tr><td colspan="9">Click a year on the left to show its flights here.</td></tr>
+                <tr><td colspan="9" class="empty-cell">Click a year on the left to show its flights here.</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="airports" class="panel">
+      <div class="dash-grid stats-grid">
+        <div class="panel-side">
+          <div class="panel-head"><span>Airports</span><span id="airportsTotal" class="head-total"></span></div>
+          <div class="view-controls">
+            <input id="airportSearch" class="search-input" type="search" placeholder="Search airport, city, country…" autocomplete="off">
+            <select id="airportSort" class="sort-select">
+              <option value="total">Most used</option>
+              <option value="name">A–Z</option>
+              <option value="recent">Last visit</option>
+            </select>
+          </div>
+          <div class="table-scroll">
+            <table class="index-table">
+              <colgroup><col><col style="width:70px"><col style="width:38px"><col style="width:38px"><col style="width:46px"><col style="width:80px"></colgroup>
+              <thead>
+                <tr><th>Airport</th><th>Country</th><th class="num">Dep</th><th class="num">Arr</th><th class="num">Total</th><th>Last</th></tr>
+              </thead>
+              <tbody id="airportRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel-main">
+          <div class="panel-head">
+            <span id="airportDetailTitle">Select an airport</span>
+            <button id="closeAirportDetail" type="button">Clear</button>
+          </div>
+          <div class="table-scroll" id="airportDetailBody">
+            <div class="empty-state">Click an airport in the list to see its flights by date.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="countries" class="panel">
+      <div class="dash-grid stats-grid">
+        <div class="panel-side">
+          <div class="panel-head"><span>Countries</span><span id="countriesTotal" class="head-total"></span></div>
+          <div class="view-controls">
+            <input id="countrySearch" class="search-input" type="search" placeholder="Search country or airport…" autocomplete="off">
+          </div>
+          <div class="table-scroll">
+            <table class="index-table">
+              <colgroup><col><col style="width:54px"><col style="width:56px"><col style="width:54px"><col style="width:80px"><col style="width:80px"></colgroup>
+              <thead>
+                <tr><th>Country</th><th class="num">Airports</th><th class="num">Arrivals</th><th class="num">Departs</th><th>First</th><th>Last</th></tr>
+              </thead>
+              <tbody id="countryRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel-main">
+          <div class="panel-head">
+            <span id="countryDetailTitle">Select a country</span>
+            <button id="closeCountryDetail" type="button">Clear</button>
+          </div>
+          <div class="table-scroll" id="countryDetailBody">
+            <div class="empty-state">Click a country in the list to see its flights by date.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="airlines" class="panel">
+      <div class="dash-grid stats-grid">
+        <div class="panel-side">
+          <div class="panel-head"><span>Airlines</span><span id="airlinesTotal" class="head-total"></span></div>
+          <div class="view-controls">
+            <input id="airlineSearch" class="search-input" type="search" placeholder="Search airline, aircraft, country…" autocomplete="off">
+          </div>
+          <div class="table-scroll">
+            <table class="index-table">
+              <colgroup><col><col style="width:50px"><col style="width:56px"><col style="width:64px"><col style="width:80px"></colgroup>
+              <thead>
+                <tr><th>Airline</th><th class="num">Flights</th><th class="num">Airports</th><th class="num">Countries</th><th>Last</th></tr>
+              </thead>
+              <tbody id="airlineRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel-main">
+          <div class="panel-head">
+            <span id="airlineDetailTitle">Select an airline</span>
+            <button id="closeAirlineDetail" type="button">Clear</button>
+          </div>
+          <div class="table-scroll" id="airlineDetailBody">
+            <div class="empty-state">Click an airline in the list to see its flights by date.</div>
           </div>
         </div>
       </div>
@@ -68,11 +159,11 @@
           </div>
           <div class="form-group">
             <label for="departure">Departure</label>
-            <input id="departure" maxlength="4" required placeholder="AMS">
+            <input id="departure" maxlength="4" required placeholder="AMS" autocapitalize="characters">
           </div>
           <div class="form-group">
             <label for="arrival">Arrival</label>
-            <input id="arrival" maxlength="4" required placeholder="PHL">
+            <input id="arrival" maxlength="4" required placeholder="PHL" autocapitalize="characters">
             <div id="arrivalCity" class="city-hint"></div>
           </div>
           <div class="form-group">
@@ -95,7 +186,7 @@
         <div class="panel-side">
           <div class="panel-head">Search</div>
           <div class="search-wrap">
-            <input id="flightSearch" class="search-input" placeholder="Search flights...">
+            <input id="flightSearch" class="search-input" placeholder="Search flights…">
           </div>
         </div>
         <div class="panel-main">
@@ -113,8 +204,8 @@
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="seed-data.js"></script>
+  <script src="flight-core.js"></script>
+  <script src="flight-store.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

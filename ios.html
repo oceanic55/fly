@@ -32,18 +32,17 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       color: var(--text); display: flex; flex-direction: column;
       -webkit-font-smoothing: antialiased;
-      /* reserve space for bottom nav + safe area */
       padding-bottom: calc(var(--nav-h) + var(--safe-b));
     }
 
     /* ── Header ────────────────────────────────────── */
     .ios-header {
       display: flex; align-items: center;
-      padding: 10px 14px 10px;
-      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      padding: 8px 10px;
+      padding-top: calc(8px + env(safe-area-inset-top, 0px));
       background: var(--bg-top);
       border-bottom: 1px solid var(--line);
-      gap: 8px; flex-shrink: 0;
+      gap: 6px; flex-shrink: 0;
     }
     .ios-header h1 {
       font-size: 15px; font-weight: 700; color: var(--muted);
@@ -51,16 +50,13 @@
     }
     .ios-header button, .ios-header .file-button {
       background: var(--panel); border: 1px solid var(--line); color: var(--text);
-      padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap;
+      padding: 6px 9px; font-size: 11px; cursor: pointer; white-space: nowrap;
+      font-family: inherit;
       -webkit-tap-highlight-color: transparent;
     }
     .ios-header .file-button { display: inline-flex; align-items: center; }
     .ios-header .file-button input { display: none; }
-    .ios-header .auth-btn { font-size: 11px; padding: 5px 10px; }
-    #authStatus {
-      font-size: 11px; color: var(--muted); white-space: nowrap;
-      max-width: 120px; overflow: hidden; text-overflow: ellipsis;
-    }
+    #saveData.dirty { border-color: var(--accent-2); color: #fff; box-shadow: inset 0 0 0 1px var(--accent-2); }
 
     /* ── Stat chips: scrollable horizontal strip ──── */
     #statCards {
@@ -71,11 +67,15 @@
     #statCards::-webkit-scrollbar { display: none; }
     .stat-chip {
       flex-shrink: 0; text-align: center;
-      padding: 8px 18px; border-right: 1px solid var(--line);
+      padding: 8px 18px; border: 0; border-right: 1px solid var(--line);
+      background: transparent; color: inherit; font: inherit;
+      -webkit-tap-highlight-color: transparent;
     }
     .stat-chip:last-child { border-right: none; }
     .stat-chip strong { display: block; font-size: 22px; font-weight: 700; line-height: 1.1; }
     .stat-chip span { display: block; margin-top: 1px; color: var(--muted); font-size: 11px; }
+    .stat-chip.clickable { cursor: pointer; }
+    .stat-chip.clickable:active { background: var(--panel); }
 
     /* ── Main / panels ─────────────────────────────── */
     main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -124,9 +124,10 @@
     .fc-meta strong { color: var(--text); font-weight: 600; }
     .fc-airport { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .no-flights { padding: 24px 14px; color: var(--dim); font-size: 13px; text-align: center; }
-    .detail-back { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+    .detail-back { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; margin-bottom: 8px; }
+    .detail-back:active { background: var(--panel-2); }
     .flight-detail { background: var(--panel); border: 1px solid var(--line); padding: 14px; }
-    .flight-detail .flight-card { cursor: default; }
+    .detail-route { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
     .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
     .detail-item { border-top: 1px solid var(--line-soft); padding-top: 8px; }
     .detail-label { display: block; color: var(--dim); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
@@ -141,6 +142,62 @@
       padding: 9px 12px; font: inherit; font-size: 14px; color: var(--text); outline: none;
     }
     .search-bar-wrap input:focus { border-color: var(--accent); }
+
+    /* ── Aggregate views (airports / countries / airlines) ── */
+    .agg-list {
+      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .agg-card {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      text-align: left; background: var(--panel); border: 1px solid var(--line);
+      color: var(--text); font: inherit; padding: 11px 13px; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .agg-card:active { background: var(--panel-2); }
+    .agg-main { flex: 1; min-width: 0; display: block; }
+    .agg-title { display: block; font-size: 15px; font-weight: 700; }
+    .agg-code { color: var(--accent-2); margin-right: 4px; }
+    .agg-sub {
+      display: block; font-size: 11px; color: var(--muted); margin-top: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .agg-count { font-size: 22px; font-weight: 700; color: var(--accent-2); flex-shrink: 0; }
+    .agg-detail-head { background: var(--panel); border: 1px solid var(--line); padding: 13px; margin-bottom: 8px; }
+    .agg-detail-title { font-size: 18px; font-weight: 700; }
+    .agg-detail-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .detail-stats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+    .detail-stat { background: var(--bg-top); border: 1px solid var(--line); padding: 3px 8px; font-size: 11px; color: var(--muted); }
+    .detail-stat strong { color: var(--accent-2); }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .airport-chip, .aircraft-chip {
+      background: var(--bg-top); border: 1px solid var(--line); color: var(--muted);
+      padding: 3px 8px; font: inherit; font-size: 11px;
+    }
+    .airport-chip { cursor: pointer; }
+    .airport-chip strong, .aircraft-chip strong { color: var(--accent-2); margin-left: 3px; }
+    .breakdown-year {
+      font-size: 10px; font-weight: 700; color: var(--accent-2); letter-spacing: .6px;
+      padding: 9px 2px 2px; text-transform: uppercase;
+    }
+    .breakdown-card {
+      display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left;
+      background: var(--panel); border: 1px solid var(--line); color: var(--text);
+      font: inherit; padding: 10px 13px; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .breakdown-card:active { background: var(--panel-2); }
+    .bc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .bc-date { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .bc-route { font-size: 18px; font-weight: 700; }
+    .bc-meta { font-size: 12px; color: var(--text); }
+    .bc-sub { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dir-badge {
+      display: inline-block; padding: 1px 7px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px; border: 1px solid;
+    }
+    .dir-badge.dep { color: #f0d6a8; border-color: #8a6d3b; background: rgba(240,214,168,.08); }
+    .dir-badge.arr { color: #a9d8ff; border-color: #3c6f96; background: rgba(169,216,255,.08); }
 
     /* ── FAB ───────────────────────────────────────── */
     .fab {
@@ -168,7 +225,6 @@
       background: var(--bg); border-top: 2px solid var(--line);
       z-index: 89;
       display: flex; flex-direction: column;
-      /* max-height is updated by JS via --sheet-max-h to track visualViewport */
       max-height: var(--sheet-max-h, 92vh);
       height: var(--sheet-max-h, 92vh);
       transform: translateY(100%); transition: transform .25s ease;
@@ -189,7 +245,6 @@
     .sheet-head button { background: transparent; border: none; color: var(--dim); font-size: 22px; cursor: pointer; padding: 0 2px; }
     .sheet-head button:active { color: var(--text); }
 
-    /* scrollable form body */
     .sheet-form {
       flex: 1 1 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
       min-height: 0;
@@ -206,7 +261,6 @@
     .sheet-form .form-group input:focus { border-color: var(--accent); }
     .city-hint { font-size: 11px; color: var(--accent-2); margin-top: 5px; min-height: 1.1em; }
 
-    /* actions always visible at bottom */
     .sheet-actions {
       display: flex; gap: 8px; padding: 14px 16px;
       flex-shrink: 0;
@@ -216,6 +270,7 @@
     .sheet-actions button {
       flex: 1; background: var(--accent); border: 1px solid var(--accent);
       color: #fff; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer;
+      font-family: inherit;
       -webkit-tap-highlight-color: transparent;
     }
     .sheet-actions button.sec { background: var(--panel); border: 1px solid var(--line); color: var(--text); }
@@ -231,21 +286,31 @@
     }
     .bnav-btn {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; border: none; background: transparent; color: var(--dim);
-      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;
+      gap: 2px; border: none; background: transparent; color: var(--dim);
+      font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .2px;
       cursor: pointer; border-top: 2px solid transparent; margin-top: -1px;
+      font-family: inherit;
       -webkit-tap-highlight-color: transparent;
     }
-    .bnav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .bnav-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
     .bnav-btn.active { color: var(--accent-2); border-top-color: var(--accent-2); }
 
-    /* ── Sync status banner ────────────────────────── */
-    .sync-status {
+    /* ── File status banner ────────────────────────── */
+    .file-status {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px;
       padding: 6px 12px; font-size: 12px;
       background: var(--panel-2); color: var(--muted);
       border-bottom: 1px solid var(--line); flex-shrink: 0;
     }
-    .sync-status.error { background: #4a2b2b; color: #f0b9b9; }
+    .file-status.ok { background: #23402f; color: #bfe3c9; }
+    .file-status.warn { background: #4a3a22; color: #f0d6a8; }
+    .file-status.error { background: #4a2b2b; color: #f0b9b9; }
+    .status-text { min-width: 0; }
+    .status-actions { display: flex; gap: 5px; }
+    .status-actions button {
+      background: rgba(0,0,0,.22); border: 1px solid currentColor; color: inherit;
+      padding: 2px 8px; font: inherit; font-size: 11px; cursor: pointer;
+    }
 
     /* ── Misc ──────────────────────────────────────── */
     .hidden { display: none !important; }
@@ -257,17 +322,29 @@
 
   <!-- Bottom nav -->
   <nav class="bottom-nav" aria-label="Main navigation">
-    <button class="bnav-btn active" data-tab="dashboard" aria-label="Dashboard">
+    <button class="bnav-btn active" data-tab="dashboard" aria-label="Flights">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Flights
     </button>
-    <button class="bnav-btn" data-tab="entry" id="entryNavBtn" aria-label="Add flight">
+    <button class="bnav-btn" data-tab="airports" aria-label="Airports">
+      <svg viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      Airports
+    </button>
+    <button class="bnav-btn" data-tab="countries" aria-label="Countries">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3z"/></svg>
+      Countries
+    </button>
+    <button class="bnav-btn" data-tab="airlines" aria-label="Airlines">
+      <svg viewBox="0 0 24 24"><path d="M21 3L3 10.5l6 2.5 2.5 6L21 3z"/><path d="M9 13l5-5"/></svg>
+      Airlines
+    </button>
+    <button class="bnav-btn" data-tab="entry" aria-label="Data entry">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Data Entry
+      Entry
     </button>
   </nav>
 
-  <!-- FAB (entry tab, add new flight — hidden on dashboard) -->
+  <!-- FAB (entry tab, add new flight) -->
   <button class="fab hidden" id="fab" aria-label="Add flight">+</button>
 
   <!-- Sheet backdrop -->
@@ -313,20 +390,18 @@
   <!-- Header -->
   <header class="ios-header">
     <h1>✈ FLY</h1>
-    <button id="exportJson" title="Export">Export</button>
-    <label class="file-button" id="importLabel" title="Import">
-      Import <input id="importJson" type="file" accept="application/json">
+    <label class="file-button" id="importLabel" title="Import flights or a backup">
+      Import <input id="importJson" type="file" accept=".json,.ndjson,.txt,application/json,application/x-ndjson">
     </label>
-    <span id="authStatus"></span>
-    <button id="signInBtn" class="auth-btn">Sign in</button>
-    <button id="signOutBtn" class="auth-btn hidden">Sign out</button>
+    <button id="saveData" title="Save data files">Save</button>
+    <button id="exportJson" title="Download a combined JSON backup">Export</button>
   </header>
 
   <!-- Stat chips -->
   <div id="statCards"></div>
 
-  <!-- Sync status -->
-  <div id="syncStatus" class="sync-status hidden" role="status" aria-live="polite"></div>
+  <!-- File status -->
+  <div id="fileStatus" class="file-status hidden" role="status" aria-live="polite"></div>
 
   <main>
     <!-- Dashboard panel -->
@@ -335,6 +410,30 @@
       <div class="flight-cards" id="dashCards">
         <p id="loadingMsg">Loading…</p>
       </div>
+    </section>
+
+    <!-- Airports panel -->
+    <section id="airports" class="panel">
+      <div class="search-bar-wrap">
+        <input id="airportSearch" type="search" placeholder="Search airport, city, country…" autocomplete="off">
+      </div>
+      <div class="agg-list" id="airportList"></div>
+    </section>
+
+    <!-- Countries panel -->
+    <section id="countries" class="panel">
+      <div class="search-bar-wrap">
+        <input id="countrySearch" type="search" placeholder="Search country or airport…" autocomplete="off">
+      </div>
+      <div class="agg-list" id="countryList"></div>
+    </section>
+
+    <!-- Airlines panel -->
+    <section id="airlines" class="panel">
+      <div class="search-bar-wrap">
+        <input id="airlineSearch" type="search" placeholder="Search airline, aircraft, country…" autocomplete="off">
+      </div>
+      <div class="agg-list" id="airlineList"></div>
     </section>
 
     <!-- Entry panel -->
@@ -347,296 +446,472 @@
   </main>
 
   <!-- shared data -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="seed-data.js"></script>
+  <script src="flight-core.js"></script>
+  <script src="flight-store.js"></script>
   <script>
 
-  // ── Supabase ──────────────────────────────────────────────────────────────
-  const SUPABASE_URL     = 'https://sswwadgaygrbadqcgyxq.supabase.co'
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzd3dhZGdheWdyYmFkcWNneXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMTY1NzIsImV4cCI6MjEwMDg5MjU3Mn0.cJ5EZD1Pinfx-Vqp_j_9vU_44uV-0lw4kSxKpjED70w'
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  const core = window.FlightCore
+  const store = window.FlightStore
+
+  const {
+    normCode,
+    normText,
+    escapeHtml: esc,
+    shortAirportName,
+    flightYear,
+    sortByDateDesc,
+    flightsForIds,
+  } = core
+
+  const $ = id => document.getElementById(id)
 
   // ── App state ─────────────────────────────────────────────────────────────
-  const STORE_KEY = 'flights-db-v1'
-  let flights  = []
+  let flights = []
   let airports = []
-  let _session = null
+  let _agg = null
+  let fileHash = ''
+  let dirty = false
+  let airportsDirty = false
+  let statusActions = []
+
+  let _view = 'dashboard'
   let _activeYear = null
   let _dashDetailId = null
-  let _editId  = null
+  let _editId = null
 
-  const $  = id => document.getElementById(id)
-  const esc = v => String(v||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
-  const normCode = v => String(v||'').trim().toUpperCase()
-  const normText = v => String(v||'').trim()
-  const unique   = arr => [...new Set(arr.filter(Boolean))]
+  let _airportDetail = null
+  let _countryDetail = null
+  let _airlineDetail = null
+  let _airportBreakdown = null
+  let _countryBreakdown = null
+  let _airlineBreakdown = null
 
-  // ── Sync status ────────────────────────────────────────────────────────────
-  function setSyncStatus(message, isError) {
-    const el = $('syncStatus')
+  let _airportQuery = ''
+  let _countryQuery = ''
+  let _airlineQuery = ''
+
+  let _pendingDraft = null
+  let _pendingLegacy = null
+
+  // ── Status + draft ────────────────────────────────────────────────────────
+  function setStatus(message, kind, actions) {
+    const el = $('fileStatus')
     if (!el) return
-    el.textContent = message
-    el.classList.toggle('hidden', !message)
-    el.classList.toggle('error', !!isError)
+    statusActions = actions || []
+    el.className = 'file-status' + (kind ? ` ${kind}` : '') + (message ? '' : ' hidden')
+    el.innerHTML = message
+      ? `<span class="status-text">${esc(message)}</span>` +
+        (statusActions.length
+          ? `<span class="status-actions">${statusActions
+              .map((action, index) => `<button type="button" data-status-action="${index}">${esc(action.label)}</button>`)
+              .join('')}</span>`
+          : '')
+      : ''
   }
 
-  // ── Persistence ───────────────────────────────────────────────────────────
-  async function loadData() {
-    try {
-      const [{ data: rf, error: fe }, { data: ra, error: ae }] = await Promise.all([
-        sb.from('flights').select('*').order('date', { ascending: false }),
-        sb.from('airports').select('*').order('iata'),
-      ])
-      if (!fe && !ae && rf && ra) {
-        flights  = rf
-        airports = mergeAirports(ra)
-        localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
-        setSyncStatus('Synced')
-        return
-      }
-      if (_session) {
-        setSyncStatus(`Server read failed: ${(fe || ae).message || 'unknown error'} — showing local data`, true)
-      }
-    } catch (err) {
-      if (_session) setSyncStatus(`Server unavailable: ${err?.message || err} — showing local data`, true)
-    }
-    // offline fallback
-    const saved = localStorage.getItem(STORE_KEY)
-    if (saved) {
-      const p = JSON.parse(saved)
-      flights  = p.flights  || []
-      airports = mergeAirports(p.airports || [])
-      return
-    }
-    flights  = [...window.SEED_DATA.flights]
-    airports = [...window.SEED_DATA.airports]
+  function updateDirtyUI() {
+    document.title = (dirty ? '• ' : '') + '✈ FLY'
+    const button = $('saveData')
+    if (button) button.classList.toggle('dirty', dirty)
   }
 
-  function mergeAirports(saved) {
-    const seedMap = new Map(window.SEED_DATA.airports.map(a => [normCode(a.iata), a]))
-    const merged  = saved.map(a => ({ ...seedMap.get(normCode(a.iata)), ...a }))
-    const codes   = new Set(merged.map(a => normCode(a.iata)))
-    for (const a of window.SEED_DATA.airports) if (!codes.has(normCode(a.iata))) merged.push(a)
-    return merged
+  function persistDraft(source) {
+    store.writeDraft({ flights, airports, baseHash: fileHash, dirty, source: source || 'files' })
   }
 
-  async function saveData() {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
-    if (!_session) {
-      setSyncStatus('Signed out — changes saved on this device only', true)
-      return false
-    }
-    const [{ error: fe }, { error: ae }] = await Promise.all([
-      sb.from('flights').upsert(flights),
-      sb.from('airports').upsert(airports),
-    ])
-    if (fe || ae) {
-      const msg = (fe || ae).message
-      console.error('sync error:', msg)
-      setSyncStatus(`Sync failed: ${msg} — saved on this device only`, true)
-      return false
-    }
-    setSyncStatus('Synced')
-    return true
+  function markDirty(message) {
+    dirty = true
+    persistDraft()
+    updateDirtyUI()
+    if (message) setStatus(message, 'warn')
   }
 
-  async function deleteFlightById(id) {
-    flights = flights.filter(f => f.id !== id)
-    localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
-    if (!_session) {
-      setSyncStatus('Signed out — delete saved on this device only', true)
-      return
-    }
-    const { error } = await sb.from('flights').delete().eq('id', id)
-    if (error) {
-      console.error('delete:', error.message)
-      setSyncStatus(`Delete failed to sync: ${error.message}`, true)
-    }
+  function adoptData(nextFlights, nextAirports, options) {
+    const opts = options || {}
+    const validated = core.validateData(nextFlights, nextAirports)
+    flights = validated.flights
+    airports = validated.airports
+    dirty = opts.dirty !== false
+    airportsDirty = !!opts.airportsChanged
+    persistDraft(opts.source || 'files')
+    renderAll()
+    updateDirtyUI()
+    return validated
   }
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
-  async function initAuth() {
-    const { data: { session } } = await sb.auth.getSession()
-    _session = session
-    applyAuthUI(session)
-    sb.auth.onAuthStateChange((_e, s) => { _session = s; applyAuthUI(s); renderAll() })
-    $('signInBtn').addEventListener('click', () =>
-      sb.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: location.href } }))
-    $('signOutBtn').addEventListener('click', () => sb.auth.signOut())
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const airportMap = () => new Map(airports.map(a => [normCode(a.iata), a]))
+
+  function matches(haystack, query) {
+    if (!query) return true
+    return String(haystack || '').toLowerCase().includes(query.toLowerCase())
   }
 
-  function applyAuthUI(session) {
-    const ok = !!session
-    $('authStatus').textContent = ok ? (session.user.user_metadata.user_name ?? session.user.email) : ''
-    $('signInBtn').classList.toggle('hidden', ok)
-    $('signOutBtn').classList.toggle('hidden', !ok)
-    $('importLabel').classList.toggle('hidden', !ok)
-    // write UI always visible — auth only gates remote sync, not local use
-  }
-
-  // ── Real-time ─────────────────────────────────────────────────────────────
-  function subscribeRealtime() {
-    sb.channel('ios-flights')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'flights' }, async () => {
-        const { data, error } = await sb.from('flights').select('*').order('date', { ascending: false })
-        if (!error && data) {
-          flights = data
-          localStorage.setItem(STORE_KEY, JSON.stringify({ flights, airports }))
-          setSyncStatus('Synced')
-          renderAll()
-        }
-      })
-      .subscribe()
-  }
+  function dateOrDash(date) { return date || '—' }
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  function buildAirportMap() { return new Map(airports.map(a => [normCode(a.iata), a])) }
-
-  function calcStats() {
-    const amap = buildAirportMap()
-    const valid = flights.filter(f => f.date || f.departure || f.arrival)
-    const byYear = {}
-    for (const f of valid) {
-      const y = f.date ? new Date(f.date + 'T00:00:00').getFullYear() : null
-      if (y) byYear[y] = (byYear[y] || 0) + 1
-    }
-    return {
-      total:    valid.length,
-      airports: unique(valid.flatMap(f => [normCode(f.departure), normCode(f.arrival)])).length,
-      countries:unique(valid.map(f => amap.get(normCode(f.arrival))?.country)).length,
-      airlines: unique(valid.map(f => normText(f.airline).toUpperCase())).length,
-      aircraft: unique(valid.map(f => normText(f.aircraft))).length,
-      byYear,
-    }
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
   function renderStats() {
-    const s = calcStats()
-    $('statCards').innerHTML = [
-      [s.total,     'Flights'],
-      [s.airports,  'Airports'],
-      [s.countries, 'Countries'],
-      [s.airlines,  'Airlines'],
-      [s.aircraft,  'Aircraft'],
-    ].map(([v, l]) => `<div class="stat-chip"><strong>${v}</strong><span>${l}</span></div>`).join('')
+    const totals = _agg.totals
+    const chips = [
+      { value: totals.flights, label: 'Flights', view: 'dashboard' },
+      { value: totals.airports, label: 'Airports', view: 'airports' },
+      { value: totals.countries, label: 'Countries', view: 'countries' },
+      { value: totals.airlines, label: 'Airlines', view: 'airlines' },
+      { value: totals.aircraft, label: 'Aircraft', view: '' },
+    ]
+    $('statCards').innerHTML = chips.map(chip => {
+      const content = `<strong>${chip.value}</strong><span>${chip.label}</span>`
+      return chip.view
+        ? `<button type="button" class="stat-chip clickable" data-view="${chip.view}" aria-label="${chip.label}: ${chip.value}">${content}</button>`
+        : `<div class="stat-chip">${content}</div>`
+    }).join('')
   }
 
   function renderYearPills() {
-    const s = calcStats()
-    const years = Object.keys(s.byYear).map(Number).sort((a, b) => b - a)
+    const years = _agg.byYear.map(row => row.year)
     if (!years.length) { $('yearPills').innerHTML = ''; return }
     if (!_activeYear || !years.includes(_activeYear)) _activeYear = years[0]
-    $('yearPills').innerHTML = years.map(y =>
-      `<button class="year-pill${y === _activeYear ? ' active' : ''}" data-year="${y}">${y} · ${s.byYear[y]}</button>`
+    $('yearPills').innerHTML = _agg.byYear.map(row =>
+      `<button type="button" class="year-pill${row.year === _activeYear ? ' active' : ''}" data-year="${row.year}">${row.year} · ${row.count}</button>`
     ).join('')
   }
 
-  function flightCard(f) {
-    const amap = buildAirportMap()
-    const arr  = amap.get(normCode(f.arrival))   || {}
-    const dep  = amap.get(normCode(f.departure)) || {}
+  function flightCard(flight) {
+    const map = airportMap()
+    const arr = map.get(normCode(flight.arrival)) || {}
+    const dep = map.get(normCode(flight.departure)) || {}
+    const arrShort = shortAirportName(arr.name)
+    const depShort = shortAirportName(dep.name)
+    const arrCity = [arrShort, arr.city, arr.country].filter(Boolean).join(', ')
+    const locationLine = depShort ? `${depShort} → ${arrCity || flight.arrival}` : (arrCity || '')
 
-    // Strip redundant "Airport", shorten "International" → "Intl"
-    const shortName = n => (n || '')
-      .replace(/\bInternational\b/gi, 'Intl')
-      .replace(/\bAirport\b/gi, '')
-      .replace(/\s{2,}/g, ' ').trim().replace(/,\s*$/, '').trim()
-
-    const depShort = shortName(dep.name)
-    const arrShort = shortName(arr.name)
-    const arrCity  = [arrShort, arr.city, arr.country].filter(Boolean).join(', ')
-    const depCity  = depShort || ''
-
-    // "Frankfurt Intl → Valencia, Valencia, Spain"
-    const locationLine = depCity
-      ? `${depCity} → ${arrCity || f.arrival}`
-      : (arrCity || '')
-
-    return `<div class="flight-card" data-flight-id="${esc(f.id)}">
+    return `<div class="flight-card" data-flight-id="${esc(flight.id)}">
       <div class="fc-route">
-        <span>${esc(f.departure)}</span>
+        <span>${esc(flight.departure)}</span>
         <span class="fc-arrow">→</span>
-        <span>${esc(f.arrival)}</span>
+        <span>${esc(flight.arrival)}</span>
       </div>
       <div class="fc-meta">
-        <span><strong>${esc(f.date)}</strong></span>
-        ${f.airline  ? `<span>${esc(f.airline)}</span>` : ''}
-        ${f.aircraft ? `<span>${esc(f.aircraft)}</span>` : ''}
+        <span><strong>${esc(flight.date)}</strong></span>
+        ${flight.airline ? `<span>${esc(flight.airline)}</span>` : ''}
+        ${flight.aircraft ? `<span>${esc(flight.aircraft)}</span>` : ''}
       </div>
       ${locationLine ? `<div class="fc-airport">${esc(locationLine)}</div>` : ''}
     </div>`
   }
 
+  function flightDetailCard(flight) {
+    const map = airportMap()
+    const dep = map.get(normCode(flight.departure)) || {}
+    const arr = map.get(normCode(flight.arrival)) || {}
+    const full = airport => [airport.name, airport.city, airport.country].filter(Boolean).join(', ') || '—'
+    return `<div class="flight-detail">
+      <div class="detail-route">${esc(flight.departure)} <span class="fc-arrow">→</span> ${esc(flight.arrival)}</div>
+      <div class="detail-grid">
+        <div class="detail-item"><span class="detail-label">Date</span><span class="detail-value">${esc(flight.date || '—')}</span></div>
+        <div class="detail-item"><span class="detail-label">Airline</span><span class="detail-value">${esc(flight.airline || '—')}</span></div>
+        <div class="detail-item"><span class="detail-label">Aircraft</span><span class="detail-value">${esc(flight.aircraft || '—')}</span></div>
+        <div class="detail-item"><span class="detail-label">Departure airport</span><span class="detail-value">${esc(full(dep))}</span></div>
+        <div class="detail-item"><span class="detail-label">Arrival airport</span><span class="detail-value">${esc(full(arr))}</span></div>
+      </div>
+    </div>`
+  }
+
+  function detailStats(items) {
+    return `<div class="detail-stats">${items
+      .filter(Boolean)
+      .map(item => `<span class="detail-stat"><strong>${esc(item.value)}</strong>${item.label ? ' ' + esc(item.label) : ''}</span>`)
+      .join('')}</div>`
+  }
+
+  function viewBack(label, view) {
+    return `<button type="button" class="detail-back" data-back-view="${view}">← ${esc(label)}</button>`
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
   function renderDashCards() {
-    const year  = _activeYear
-    const cards = year ? flights.filter(f => f.date && new Date(f.date + 'T00:00:00').getFullYear() === year) : []
+    const year = _activeYear
+    const cards = year
+      ? flights.filter(f => flightYear(f) === year).sort(sortByDateDesc)
+      : []
+
     if (_dashDetailId) {
-      const f = cards.find(x => x.id === _dashDetailId) || flights.find(x => x.id === _dashDetailId)
-      $('dashCards').innerHTML = f ? flightDetail(f) : `<p class="no-flights">Flight not found.</p>`
+      const flight = cards.find(f => f.id === _dashDetailId) || flights.find(f => f.id === _dashDetailId)
+      $('dashCards').innerHTML = flight
+        ? `<button type="button" class="detail-back" id="dashBackBtn">← Back to ${year || 'flights'}</button>${flightDetailCard(flight)}`
+        : '<p class="no-flights">Flight not found.</p>'
       return
     }
+
     $('dashCards').innerHTML = cards.length
       ? cards.map(flightCard).join('')
-      : `<p class="no-flights">${year ? 'No flights for ' + year + '.' : 'Select a year above.'}</p>`
+      : `<p class="no-flights">${
+        !flights.length
+          ? 'No flights yet. Tap + to add one, or Import a data file.'
+          : year
+            ? 'No flights for ' + year + '.'
+            : 'Select a year above.'
+      }</p>`
   }
 
-  function flightDetail(f) {
-    const amap = buildAirportMap()
-    const dep = amap.get(normCode(f.departure)) || {}
-    const arr = amap.get(normCode(f.arrival)) || {}
-    const full = ap => [ap.name, ap.city, ap.country].filter(Boolean).join(', ') || '—'
-    return `<button class="detail-back" id="dashBackBtn">← Back</button>
-      <div class="flight-detail">
-        ${flightCard(f)}
-        <div class="detail-grid">
-          <div class="detail-item"><span class="detail-label">Date</span><span class="detail-value">${esc(f.date || '—')}</span></div>
-          <div class="detail-item"><span class="detail-label">Airline</span><span class="detail-value">${esc(f.airline || '—')}</span></div>
-          <div class="detail-item"><span class="detail-label">Aircraft</span><span class="detail-value">${esc(f.aircraft || '—')}</span></div>
-          <div class="detail-item"><span class="detail-label">Departure airport</span><span class="detail-value">${esc(full(dep))}</span></div>
-          <div class="detail-item"><span class="detail-label">Arrival airport</span><span class="detail-value">${esc(full(arr))}</span></div>
-        </div>
-      </div>`
-  }
+  function renderEntryCards(query) {
+    const q = String(query || '').toLowerCase()
+    const map = airportMap()
+    const rows = flights.filter(flight => {
+      if (!q) return true
+      const arr = map.get(normCode(flight.arrival)) || {}
+      const dep = map.get(normCode(flight.departure)) || {}
+      const hay = (JSON.stringify(flight) + ' ' + [dep.city, dep.name, arr.city, arr.name, arr.country].join(' ')).toLowerCase()
+      return hay.includes(q)
+    }).sort(sortByDateDesc)
 
-  function renderEntryCards(q = '') {
-    const lq = q.toLowerCase()
-    const amap = buildAirportMap()
-    const rows = flights.filter(f => {
-      if (!lq) return true
-      const arr = amap.get(normCode(f.arrival))  || {}
-      const dep = amap.get(normCode(f.departure)) || {}
-      const hay = (JSON.stringify(f) + ' ' + [dep.city, dep.name, arr.city, arr.name, arr.country].join(' ')).toLowerCase()
-      return hay.includes(lq)
-    })
     $('entryCards').innerHTML = rows.length
       ? rows.map(flightCard).join('')
-      : `<p class="no-flights">${lq ? 'No matches.' : 'No flights yet.'}</p>`
+      : `<p class="no-flights">${q ? 'No matches.' : 'No flights yet.'}</p>`
   }
 
+  // ── Breakdown cards ───────────────────────────────────────────────────────
+  function breakdownCards(rows, mode, key) {
+    if (!rows.length) return '<p class="no-flights">No flights recorded.</p>'
+    const map = airportMap()
+    let html = ''
+    let year = null
+
+    for (const flight of rows) {
+      const flightDateYear = flightYear(flight)
+      if (flightDateYear && flightDateYear !== year) {
+        year = flightDateYear
+        html += `<div class="breakdown-year">${year}</div>`
+      }
+      const dep = map.get(normCode(flight.departure)) || {}
+      const arr = map.get(normCode(flight.arrival)) || {}
+      let badge = ''
+      let meta = ''
+      let sub = ''
+
+      if (mode === 'airport') {
+        const isDeparture = normCode(flight.departure) === key
+        badge = `<span class="dir-badge ${isDeparture ? 'dep' : 'arr'}">${isDeparture ? 'Out' : 'In'}</span>`
+        const other = isDeparture ? arr : dep
+        sub = [isDeparture ? flight.arrival : flight.departure, shortAirportName(other.name), other.city, other.country].filter(Boolean).join(' · ')
+        meta = [flight.airline, flight.aircraft].filter(Boolean).join(' · ') || '—'
+      } else if (mode === 'country') {
+        sub = [flight.arrival, shortAirportName(arr.name), arr.city].filter(Boolean).join(' · ')
+        meta = [flight.airline, flight.aircraft].filter(Boolean).join(' · ') || '—'
+      } else {
+        sub = [arr.city, arr.country].filter(Boolean).join(', ') || '—'
+        meta = flight.aircraft || '—'
+      }
+
+      html += `<button type="button" class="breakdown-card" data-breakdown-flight="${esc(flight.id)}">
+        <span class="bc-top"><span class="bc-date">${esc(dateOrDash(flight.date))}</span>${badge}</span>
+        <span class="bc-route">${esc(flight.departure)} <span class="fc-arrow">→</span> ${esc(flight.arrival)}</span>
+        <span class="bc-meta">${esc(meta)}</span>
+        <span class="bc-sub">${esc(sub)}</span>
+      </button>`
+    }
+    return html
+  }
+
+  // ── Airports view ─────────────────────────────────────────────────────────
+  function airportCard(group) {
+    return `<button type="button" class="agg-card" data-airport="${esc(group.code)}">
+      <span class="agg-main">
+        <span class="agg-title"><span class="agg-code">${esc(group.code)}</span>${esc(shortAirportName(group.name)) || 'Unknown airport'}</span>
+        <span class="agg-sub">${esc([group.city, group.country].filter(Boolean).join(', ') || 'Location unknown')} · ${group.departures} out · ${group.arrivals} in</span>
+        <span class="agg-sub">Last flight ${esc(dateOrDash(group.last))}</span>
+      </span>
+      <span class="agg-count">${group.total}</span>
+    </button>`
+  }
+
+  function renderAirportView() {
+    const container = $('airportList')
+
+    if (_airportDetail) {
+      if (_airportBreakdown) {
+        const flight = flights.find(f => f.id === _airportBreakdown)
+        if (flight) {
+          container.innerHTML = `<button type="button" class="detail-back" data-breakdown-back>← Back to ${esc(_airportDetail)}</button>${flightDetailCard(flight)}`
+          return
+        }
+        _airportBreakdown = null
+      }
+
+      const group = _agg.byAirport.find(row => row.code === _airportDetail)
+      if (!group) {
+        _airportDetail = null
+        renderAirportView()
+        return
+      }
+      const rows = flightsForIds(flights, group.flightIds)
+      container.innerHTML = viewBack('Airports', 'airports') + `
+        <div class="agg-detail-head">
+          <div class="agg-detail-title">${esc(group.code)} · ${esc(shortAirportName(group.name)) || 'Unknown airport'}</div>
+          <div class="agg-detail-sub">${esc([group.city, group.country].filter(Boolean).join(', ') || 'Location unknown')}</div>
+          ${detailStats([
+            { value: group.total, label: 'flights' },
+            { value: group.departures, label: 'out' },
+            { value: group.arrivals, label: 'in' },
+            { value: `${dateOrDash(group.first)} → ${dateOrDash(group.last)}`, label: '' },
+          ])}
+        </div>` + breakdownCards(rows, 'airport', group.code)
+      return
+    }
+
+    const rows = _agg.byAirport.filter(group =>
+      matches([group.code, group.name, group.city, group.country].join(' '), _airportQuery)
+    )
+    container.innerHTML = rows.length
+      ? rows.map(airportCard).join('')
+      : '<p class="no-flights">No airports match.</p>'
+  }
+
+  // ── Countries view ────────────────────────────────────────────────────────
+  function countryCard(group) {
+    return `<button type="button" class="agg-card" data-country="${esc(group.country)}">
+      <span class="agg-main">
+        <span class="agg-title">${esc(group.country)}</span>
+        <span class="agg-sub">${group.airportCount} airports · ${group.departures} departures</span>
+        <span class="agg-sub">Last flight ${esc(dateOrDash(group.last))}</span>
+      </span>
+      <span class="agg-count">${group.arrivals}</span>
+    </button>`
+  }
+
+  function renderCountryView() {
+    const container = $('countryList')
+
+    if (_countryDetail) {
+      if (_countryBreakdown) {
+        const flight = flights.find(f => f.id === _countryBreakdown)
+        if (flight) {
+          container.innerHTML = `<button type="button" class="detail-back" data-breakdown-back>← Back to ${esc(_countryDetail)}</button>${flightDetailCard(flight)}`
+          return
+        }
+        _countryBreakdown = null
+      }
+
+      const group = _agg.byCountry.find(row => row.country === _countryDetail)
+      if (!group) {
+        _countryDetail = null
+        renderCountryView()
+        return
+      }
+      const rows = flightsForIds(flights, group.flightIds)
+      const counts = new Map()
+      for (const flight of rows) counts.set(flight.arrival, (counts.get(flight.arrival) || 0) + 1)
+      const chips = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([code, count]) => `<button type="button" class="airport-chip" data-jump-airport="${esc(code)}">${esc(code)}<strong>${count}</strong></button>`)
+        .join('')
+
+      container.innerHTML = viewBack('Countries', 'countries') + `
+        <div class="agg-detail-head">
+          <div class="agg-detail-title">${esc(group.country)}</div>
+          <div class="agg-detail-sub">${group.airportCount} airports · ${group.arrivals} arrivals · ${group.departures} departures</div>
+          ${detailStats([
+            { value: group.arrivals, label: 'flights' },
+            { value: group.airportCount, label: 'airports' },
+            { value: `${dateOrDash(group.first)} → ${dateOrDash(group.last)}`, label: '' },
+          ])}
+          ${chips ? `<div class="chip-row">${chips}</div>` : ''}
+        </div>` + breakdownCards(rows, 'country', group.country)
+      return
+    }
+
+    const rows = _agg.byCountry.filter(group =>
+      matches([group.country, group.airportCodes.join(' ')].join(' '), _countryQuery)
+    )
+    container.innerHTML = rows.length
+      ? rows.map(countryCard).join('')
+      : '<p class="no-flights">No countries match.</p>'
+  }
+
+  // ── Airlines view ─────────────────────────────────────────────────────────
+  function airlineCard(group) {
+    return `<button type="button" class="agg-card" data-airline="${esc(group.airline)}">
+      <span class="agg-main">
+        <span class="agg-title">${esc(group.airline)}</span>
+        <span class="agg-sub">${group.airportCount} airports · ${group.countryCount} countries · ${group.aircraft.filter(item => item.known).length} aircraft</span>
+        <span class="agg-sub">Last flight ${esc(dateOrDash(group.last))}</span>
+      </span>
+      <span class="agg-count">${group.flights}</span>
+    </button>`
+  }
+
+  function renderAirlineView() {
+    const container = $('airlineList')
+
+    if (_airlineDetail) {
+      if (_airlineBreakdown) {
+        const flight = flights.find(f => f.id === _airlineBreakdown)
+        if (flight) {
+          container.innerHTML = `<button type="button" class="detail-back" data-breakdown-back>← Back to ${esc(_airlineDetail)}</button>${flightDetailCard(flight)}`
+          return
+        }
+        _airlineBreakdown = null
+      }
+
+      const group = _agg.byAirline.find(row => row.airline === _airlineDetail)
+      if (!group) {
+        _airlineDetail = null
+        renderAirlineView()
+        return
+      }
+      const rows = flightsForIds(flights, group.flightIds)
+      const chips = group.aircraft
+        .map(item => `<span class="aircraft-chip">${esc(item.known ? item.name : 'Unknown')}<strong>${item.count}</strong></span>`)
+        .join('')
+
+      container.innerHTML = viewBack('Airlines', 'airlines') + `
+        <div class="agg-detail-head">
+          <div class="agg-detail-title">${esc(group.airline)}</div>
+          <div class="agg-detail-sub">${group.flights} flights · ${group.airportCount} airports · ${group.countryCount} countries</div>
+          ${detailStats([
+            { value: group.flights, label: 'flights' },
+            { value: group.airportCount, label: 'airports' },
+            { value: `${dateOrDash(group.first)} → ${dateOrDash(group.last)}`, label: '' },
+          ])}
+          ${chips ? `<div class="chip-row">${chips}</div>` : ''}
+        </div>` + breakdownCards(rows, 'airline', group.airline)
+      return
+    }
+
+    const rows = _agg.byAirline.filter(group =>
+      matches([group.airline, group.countries.join(' '), group.aircraft.map(item => item.name).join(' ')].join(' '), _airlineQuery)
+    )
+    container.innerHTML = rows.length
+      ? rows.map(airlineCard).join('')
+      : '<p class="no-flights">No airlines match.</p>'
+  }
+
+  // ── Render all ────────────────────────────────────────────────────────────
   function renderAll() {
+    _agg = core.aggregate(flights, airports)
     renderStats()
     renderYearPills()
     renderDashCards()
     renderEntryCards($('entrySearch').value)
+    renderAirportView()
+    renderCountryView()
+    renderAirlineView()
   }
 
   // ── Sheet helpers ─────────────────────────────────────────────────────────
-  function openSheet(editId = null) {
-    _editId = editId
-    const f = editId ? flights.find(x => x.id === editId) : null
-    $('sheetTitle').textContent = f ? 'Edit flight' : 'Add flight'
-    $('flightId').value    = f ? f.id        : ''
-    $('sDate').value       = f ? f.date      : ''
-    $('sDep').value        = f ? f.departure : ''
-    $('sArr').value        = f ? f.arrival   : ''
-    $('sAirline').value    = f ? f.airline   : ''
-    $('sAircraft').value   = f ? f.aircraft  : ''
+  function openSheet(editId) {
+    _editId = editId || null
+    const flight = _editId ? flights.find(x => x.id === _editId) : null
+    $('sheetTitle').textContent = flight ? 'Edit flight' : 'Add flight'
+    $('flightId').value = flight ? flight.id : ''
+    $('sDate').value = flight ? flight.date : ''
+    $('sDep').value = flight ? flight.departure : ''
+    $('sArr').value = flight ? flight.arrival : ''
+    $('sAirline').value = flight ? flight.airline : ''
+    $('sAircraft').value = flight ? flight.aircraft : ''
     updateCityHint()
-    $('deleteFlightBtn').classList.toggle('hidden', !f)
+    $('deleteFlightBtn').classList.toggle('hidden', !flight)
 
-    // Highlight the tapped card immediately. The open sheet reduces the visible
-    // area, so center it again after the sheet animation completes.
     document.querySelectorAll('.flight-card.editing').forEach(el => el.classList.remove('editing'))
     let editingCard = null
     if (editId) {
@@ -650,7 +925,6 @@
     $('formSheet').classList.add('open')
     $('sheetBackdrop').classList.add('active')
     if (editingCard) setTimeout(() => editingCard.scrollIntoView({ behavior: 'smooth', block: 'center' }), 280)
-    // focus first empty field after sheet animation completes
     setTimeout(() => { if (!$('sDate').value) $('sDate').focus() }, 280)
   }
 
@@ -661,167 +935,472 @@
   }
 
   function updateCityHint() {
-    const code = normCode($('sArr').value)
-    const ap   = buildAirportMap().get(code)
-    $('arrivalCity').textContent = ap ? [ap.city, ap.country].filter(Boolean).join(', ') : ''
+    const airport = airportMap().get(normCode($('sArr').value))
+    $('arrivalCity').textContent = airport ? [airport.city, airport.country].filter(Boolean).join(', ') : ''
   }
 
   // ── Airport lookup ────────────────────────────────────────────────────────
   async function ensureAirport(iata) {
-    if (!iata || buildAirportMap().has(iata)) return
+    if (!iata || airports.some(airport => normCode(airport.iata) === iata)) return
     const found = await lookupWikidata(iata)
-    if (found) { airports.push(found); return }
+    if (found) {
+      airports.push(found)
+      airportsDirty = true
+      return
+    }
     const country = prompt(`No data for ${iata}. Enter country (or blank to skip):`)
-    if (!country) return
+    if (!country) {
+      airports.push({ iata, name: '', city: '', country: '' })
+      airportsDirty = true
+      return
+    }
     airports.push({
       iata,
-      name:    normText(prompt(`Airport name for ${iata}?`, '') || ''),
-      city:    normText(prompt(`City for ${iata}?`, '') || ''),
+      name: normText(prompt(`Airport name for ${iata}?`, '') || ''),
+      city: normText(prompt(`City for ${iata}?`, '') || ''),
       country: normText(country),
     })
+    airportsDirty = true
   }
 
   async function lookupWikidata(iata) {
     try {
-      const q = `SELECT ?airport ?airportLabel ?cityLabel ?countryLabel WHERE {
+      const query = `SELECT ?airport ?airportLabel ?cityLabel ?countryLabel WHERE {
         ?airport wdt:P238 "${iata}".
         OPTIONAL { ?airport wdt:P931 ?city. }
         OPTIONAL { ?airport wdt:P17 ?country. }
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
       } LIMIT 1`
-      const res = await fetch(
-        `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(q)}`,
+      const response = await fetch(
+        `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(query)}`,
         { headers: { Accept: 'application/sparql-results+json' } }
       )
-      if (!res.ok) return null
-      const data = await res.json()
-      const r = data.results?.bindings?.[0]
-      if (!r?.countryLabel?.value) return null
-      return { iata, name: normText(r.airportLabel?.value), city: normText(r.cityLabel?.value), country: normText(r.countryLabel.value) }
-    } catch { return null }
+      if (!response.ok) return null
+      const data = await response.json()
+      const result = data.results?.bindings?.[0]
+      if (!result?.countryLabel?.value) return null
+      return {
+        iata,
+        name: normText(result.airportLabel?.value),
+        city: normText(result.cityLabel?.value),
+        country: normText(result.countryLabel.value),
+      }
+    } catch {
+      return null
+    }
   }
 
-  // ── Tab switching ─────────────────────────────────────────────────────────
+  // ── Tabs ──────────────────────────────────────────────────────────────────
   function switchTab(name) {
-    document.querySelectorAll('.panel').forEach(el => el.classList.toggle('active', el.id === name))
-    document.querySelectorAll('.bnav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name))
-    // FAB only on the entry (search/all flights) tab
+    _view = name
+    document.querySelectorAll('.panel').forEach(panel => panel.classList.toggle('active', panel.id === name))
+    document.querySelectorAll('.bnav-btn').forEach(button => button.classList.toggle('active', button.dataset.tab === name))
     $('fab').classList.toggle('hidden', name !== 'entry')
   }
 
-  // ── Wire events ───────────────────────────────────────────────────────────
+  // ── Save / import ─────────────────────────────────────────────────────────
+  async function saveToFile() {
+    // One file holds both shapes: flights first, then airports.
+    const dataText = core.serializeData(flights, airports)
+    const nextHash = store.hash(dataText)
+
+    if (store.supportsFolder()) {
+      let handle = null
+      try { handle = await store.getSavedFolder() } catch { handle = null }
+      if (handle) {
+        try {
+          if (!(await store.ensurePermission(handle))) throw new Error('Folder permission was not granted')
+          await store.saveToFolder(handle, { [store.FILES.data]: dataText })
+          fileHash = nextHash
+          dirty = false
+          store.writeDraft({ flights, airports, baseHash: fileHash, dirty: false, source: 'files' })
+          updateDirtyUI()
+          setStatus(`Saved to the linked data folder · ${flights.length} flights`, 'ok')
+          return
+        } catch (error) {
+          console.warn('Folder save failed; falling back to download:', error)
+        }
+      }
+    }
+
+    store.download(store.FILES.data, dataText)
+    fileHash = nextHash
+    dirty = false
+    store.writeDraft({ flights, airports, baseHash: fileHash, dirty: false, source: 'files' })
+    updateDirtyUI()
+    setStatus(`Downloaded ${store.FILES.data} — replace it in ${store.DATA_DIR}`, 'warn')
+  }
+
+  async function handleImport(file) {
+    let text
+    try {
+      text = await file.text()
+    } catch (error) {
+      setStatus(`Could not read ${file.name}: ${error.message}`, 'error')
+      return
+    }
+
+    const parsed = core.parseImport(text)
+    if (!parsed.flights && !parsed.airports) {
+      const detail = parsed.errors.length ? parsed.errors[0].message : 'no flight or airport records found'
+      setStatus(`Import failed: ${detail}`, 'error')
+      return
+    }
+
+    const parts = []
+    if (parsed.flights) parts.push(`flights ${flights.length} → ${parsed.flights.length}`)
+    if (parsed.airports) parts.push(`airports ${airports.length} → ${parsed.airports.length}`)
+    const target = [parsed.flights ? 'flights' : null, parsed.airports ? 'airports' : null].filter(Boolean).join(' and ')
+    if (!confirm(`Replace ${target}?\n\n${parts.join(' · ')}\n\nA one-step undo is kept.`)) return
+
+    const nextFlights = parsed.flights && parsed.flights.length ? parsed.flights : flights
+    const nextAirports = parsed.airports && parsed.airports.length ? parsed.airports : airports
+
+    store.saveUndo({ flights, airports, baseHash: fileHash })
+    const validated = adoptData(
+      nextFlights,
+      nextAirports,
+      { dirty: true, airportsChanged: true, source: 'import' }
+    )
+    const warnings = (parsed.errors || []).length + validated.warnings.length
+    const summary = parsed.airports || !airports.length
+      ? `Imported ${flights.length} flights and ${airports.length} airports`
+      : `Imported ${flights.length} flights · kept ${airports.length} airport records`
+    setStatus(
+      `${summary}${warnings ? ` · ${warnings} warning(s)` : ''}`,
+      warnings ? 'warn' : 'ok',
+      [{ label: 'Undo', fn: undoImport }]
+    )
+  }
+
+  function undoImport() {
+    const undo = store.readUndo()
+    if (!undo) {
+      setStatus('Nothing to undo', 'warn')
+      return
+    }
+    store.clearUndo()
+    adoptData(undo.flights, undo.airports, { dirty: true, airportsChanged: true, source: 'import' })
+    setStatus('Import undone — save to update data/', 'warn')
+  }
+
+  // ── Events ────────────────────────────────────────────────────────────────
   function wireEvents() {
-    // bottom nav
-    document.querySelectorAll('.bnav-btn').forEach(b =>
-      b.addEventListener('click', () => switchTab(b.dataset.tab)))
+    document.querySelectorAll('.bnav-btn').forEach(button =>
+      button.addEventListener('click', () => switchTab(button.dataset.tab))
+    )
 
-    // year pills (delegated)
-    $('yearPills').addEventListener('click', e => {
-      const pill = e.target.closest('.year-pill')
-      if (!pill) return
-      _activeYear = parseInt(pill.dataset.year, 10)
-      _dashDetailId = null
-      renderYearPills()
-      renderDashCards()
-    })
+    // All navigation inside the aggregate/detail views
+    document.addEventListener('click', event => {
+      const viewButton = event.target.closest('[data-view]')
+      if (viewButton) { switchTab(viewButton.dataset.view); return }
 
-    // dashboard card click → detail view
-    $('dashCards').addEventListener('click', e => {
-      if (e.target.closest('#dashBackBtn')) {
+      const yearPill = event.target.closest('.year-pill')
+      if (yearPill) {
+        _activeYear = parseInt(yearPill.dataset.year, 10)
+        _dashDetailId = null
+        renderYearPills()
+        renderDashCards()
+        return
+      }
+
+      if (event.target.closest('#dashBackBtn')) {
         _dashDetailId = null
         renderDashCards()
         return
       }
-      const card = e.target.closest('[data-flight-id]')
-      if (!card || _dashDetailId) return
-      _dashDetailId = card.dataset.flightId
-      renderDashCards()
-    })
 
-    // entry card click → edit
-    document.addEventListener('click', e => {
-      const card = e.target.closest('#entryCards [data-flight-id]')
-      if (card) openSheet(card.dataset.flightId)
+      const dashCard = event.target.closest('#dashCards [data-flight-id]')
+      if (dashCard && !_dashDetailId) {
+        _dashDetailId = dashCard.dataset.flightId
+        renderDashCards()
+        return
+      }
+
+      const entryCard = event.target.closest('#entryCards [data-flight-id]')
+      if (entryCard) { openSheet(entryCard.dataset.flightId); return }
+
+      const airportCardEl = event.target.closest('[data-airport]')
+      if (airportCardEl) {
+        _airportDetail = airportCardEl.dataset.airport
+        _airportBreakdown = null
+        renderAll()
+        return
+      }
+
+      const countryCardEl = event.target.closest('[data-country]')
+      if (countryCardEl) {
+        _countryDetail = countryCardEl.dataset.country
+        _countryBreakdown = null
+        renderAll()
+        return
+      }
+
+      const airlineCardEl = event.target.closest('[data-airline]')
+      if (airlineCardEl) {
+        _airlineDetail = airlineCardEl.dataset.airline
+        _airlineBreakdown = null
+        renderAll()
+        return
+      }
+
+      const jumpAirport = event.target.closest('[data-jump-airport]')
+      if (jumpAirport) {
+        _airportDetail = jumpAirport.dataset.jumpAirport
+        _airportBreakdown = null
+        switchTab('airports')
+        renderAll()
+        return
+      }
+
+      const breakdownCard = event.target.closest('[data-breakdown-flight]')
+      if (breakdownCard) {
+        const id = breakdownCard.dataset.breakdownFlight
+        if (event.target.closest('#airportList')) _airportBreakdown = id
+        else if (event.target.closest('#countryList')) _countryBreakdown = id
+        else if (event.target.closest('#airlineList')) _airlineBreakdown = id
+        renderAll()
+        return
+      }
+
+      if (event.target.closest('[data-breakdown-back]')) {
+        if (event.target.closest('#airportList')) _airportBreakdown = null
+        if (event.target.closest('#countryList')) _countryBreakdown = null
+        if (event.target.closest('#airlineList')) _airlineBreakdown = null
+        renderAll()
+        return
+      }
+
+      const backView = event.target.closest('[data-back-view]')
+      if (backView) {
+        if (backView.dataset.backView === 'airports') { _airportDetail = null; _airportBreakdown = null }
+        if (backView.dataset.backView === 'countries') { _countryDetail = null; _countryBreakdown = null }
+        if (backView.dataset.backView === 'airlines') { _airlineDetail = null; _airlineBreakdown = null }
+        renderAll()
+        return
+      }
     })
 
     // FAB
     $('fab').addEventListener('click', () => openSheet())
 
-    // sheet close
+    // Sheet close
     $('sheetBackdrop').addEventListener('click', closeSheet)
+    $('cancelSheet').addEventListener('click', closeSheet)
 
-    // arrival city hint
+    // Arrival city hint
     $('sArr').addEventListener('input', updateCityHint)
 
-    $('flightForm').addEventListener('focusin', e => {
-      if (e.target.matches('input')) {
-        setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
+    $('flightForm').addEventListener('focusin', event => {
+      if (event.target.matches('input')) {
+        setTimeout(() => event.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
       }
     })
 
-    $('cancelSheet').addEventListener('click', closeSheet)
-
-    // delete
-    $('deleteFlightBtn').addEventListener('click', async () => {
+    // Delete
+    $('deleteFlightBtn').addEventListener('click', () => {
       const id = $('flightId').value
       if (!id || !confirm('Delete this flight?')) return
       closeSheet()
-      await deleteFlightById(id)
+      flights = flights.filter(flight => flight.id !== id)
+      markDirty('Flight deleted — save to update data/')
       renderAll()
     })
 
-    // form submit
-    $('flightForm').addEventListener('submit', async e => {
-      e.preventDefault()
+    // Form submit
+    $('flightForm').addEventListener('submit', async event => {
+      event.preventDefault()
       const dep = normCode($('sDep').value)
       const arr = normCode($('sArr').value)
       await ensureAirport(dep)
       await ensureAirport(arr)
-      const id = $('flightId').value || `f${Date.now()}`
-      const flight = { id, date: $('sDate').value, departure: dep, arrival: arr,
-                       airline: normText($('sAirline').value), aircraft: normText($('sAircraft').value) }
-      const idx = flights.findIndex(f => f.id === id)
-      if (idx >= 0) flights[idx] = flight; else flights.unshift(flight)
-      await saveData()
+      const id = $('flightId').value || core.makeId()
+      const flight = {
+        id,
+        date: $('sDate').value,
+        departure: dep,
+        arrival: arr,
+        airline: normText($('sAirline').value),
+        aircraft: normText($('sAircraft').value),
+      }
+      const index = flights.findIndex(row => row.id === id)
+      if (index >= 0) flights[index] = flight
+      else flights.push(flight)
+      markDirty(`Unsaved changes · ${flights.length} flights — save to update data/`)
       closeSheet()
       renderAll()
     })
 
-    // search
-    $('entrySearch').addEventListener('input', e => renderEntryCards(e.target.value))
-
-    // export
-    $('exportJson').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify({ flights, airports }, null, 2)], { type: 'application/json' })
-      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'flights-backup.json' })
-      a.click(); URL.revokeObjectURL(a.href)
+    // Search
+    $('entrySearch').addEventListener('input', event => renderEntryCards(event.target.value))
+    $('airportSearch').addEventListener('input', event => {
+      _airportQuery = event.target.value
+      renderAirportView()
+    })
+    $('countrySearch').addEventListener('input', event => {
+      _countryQuery = event.target.value
+      renderCountryView()
+    })
+    $('airlineSearch').addEventListener('input', event => {
+      _airlineQuery = event.target.value
+      renderAirlineView()
     })
 
-    // import
-    $('importJson').addEventListener('change', async e => {
-      const file = e.target.files[0]; if (!file) return
-      const p = JSON.parse(await file.text())
-      flights = p.flights || []; airports = p.airports || []
-      await saveData(); renderAll(); e.target.value = ''
+    // Status actions
+    $('fileStatus').addEventListener('click', event => {
+      const button = event.target.closest('[data-status-action]')
+      if (!button) return
+      const action = statusActions[Number(button.dataset.statusAction)]
+      if (action && typeof action.fn === 'function') action.fn()
+    })
+
+    // Save / export / import
+    $('saveData').addEventListener('click', saveToFile)
+
+    $('exportJson').addEventListener('click', () => {
+      const payload = JSON.stringify({ flights, airports }, null, 2)
+      store.download('flights-backup.json', payload + '\n', 'application/json;charset=utf-8')
+      setStatus('Downloaded flights-backup.json', 'ok')
+    })
+
+    $('importJson').addEventListener('change', async event => {
+      const file = event.target.files[0]
+      event.target.value = ''
+      if (!file) return
+      await handleImport(file)
+    })
+
+    window.addEventListener('beforeunload', event => {
+      if (!dirty) return
+      event.preventDefault()
+      event.returnValue = ''
     })
   }
 
   // ── Boot ──────────────────────────────────────────────────────────────────
-
-  // Keep the form sheet sized to the visual viewport and above the bottom nav.
   function updateSheetHeight() {
     const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight
     const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64
     document.documentElement.style.setProperty('--sheet-max-h', `${Math.max(260, Math.round(vh - nav - 12))}px`)
   }
+
+  async function boot() {
+    wireEvents()
+    updateSheetHeight()
+
+    const loaded = await store.loadFiles()
+    const draft = store.readDraft()
+    const legacy = store.migrateV1()
+    let usedDraft = false
+    let usedLegacy = false
+    let warnings = []
+
+    // A missing data file is a normal first run, not an error.
+    if (loaded.anyRead) {
+      const validated = core.validateData(loaded.flights, loaded.airports)
+      flights = validated.flights
+      airports = validated.airports
+      warnings = validated.warnings
+      fileHash = store.hash(core.serializeData(flights, airports))
+
+      if (draft && draft.dirty) {
+        if (draft.baseHash === fileHash) {
+          adoptData(draft.flights, draft.airports, { dirty: true, airportsChanged: true, source: 'draft' })
+          usedDraft = true
+        } else {
+          _pendingDraft = draft
+        }
+      } else if (!draft && legacy) {
+        const legacyValidated = core.validateData(legacy.flights, legacy.airports)
+        const legacyHash = store.hash(
+          core.serializeData(legacyValidated.flights, legacyValidated.airports)
+        )
+        if (legacyHash === fileHash) store.clearLegacy()
+        else _pendingLegacy = legacy
+      }
+    } else if (draft) {
+      adoptData(draft.flights, draft.airports, { dirty: !!draft.dirty, airportsChanged: true, source: 'draft' })
+      usedDraft = true
+    } else if (legacy) {
+      adoptData(legacy.flights, legacy.airports, { dirty: true, airportsChanged: true, source: 'migration' })
+      store.clearLegacy()
+      usedLegacy = true
+    } else {
+      const validated = core.validateData(loaded.flights, loaded.airports)
+      flights = validated.flights
+      airports = validated.airports
+      warnings = validated.warnings
+      fileHash = store.hash(core.serializeData(flights, airports))
+    }
+
+    if (!usedDraft && !usedLegacy) renderAll()
+    updateDirtyUI()
+
+    if (_pendingDraft) {
+      setStatus(
+        `Local draft found (${_pendingDraft.flights.length} flights) that does not match data/ — restore it or discard it`,
+        'warn',
+        [
+          {
+            label: 'Restore',
+            fn: () => {
+              adoptData(_pendingDraft.flights, _pendingDraft.airports, { dirty: true, airportsChanged: true, source: 'draft' })
+              _pendingDraft = null
+              setStatus('Draft restored — save to update data/', 'warn')
+            },
+          },
+          {
+            label: 'Discard',
+            fn: () => {
+              store.clearDraft()
+              _pendingDraft = null
+              setStatus('Draft discarded — using the data files', 'ok')
+            },
+          },
+        ]
+      )
+    } else if (_pendingLegacy) {
+      setStatus(
+        `Old local cache found (${_pendingLegacy.flights.length} flights) that differs from data/`,
+        'warn',
+        [
+          {
+            label: 'Use cache',
+            fn: () => {
+              adoptData(_pendingLegacy.flights, _pendingLegacy.airports, { dirty: true, airportsChanged: true, source: 'migration' })
+              store.clearLegacy()
+              _pendingLegacy = null
+              setStatus('Local cache imported — save to update data/', 'warn')
+            },
+          },
+          {
+            label: 'Ignore',
+            fn: () => {
+              store.clearLegacy()
+              _pendingLegacy = null
+              setStatus('Old local cache ignored', 'ok')
+            },
+          },
+        ]
+      )
+    } else if (loaded.errors.length) {
+      setStatus(`Loaded ${flights.length} flights · ${loaded.errors[0]}`, 'warn')
+      console.warn('Data file problems:', loaded.errors)
+    } else if (warnings.length) {
+      setStatus(`Loaded ${flights.length} flights · ${warnings.length} warning(s): ${warnings[0].message}`, 'warn')
+      console.warn('Data warnings:', warnings)
+    } else if (loaded.anyRead) {
+      setStatus(`Loaded ${store.DATA_DIR}${store.FILES.data} · ${flights.length} flights`, 'ok')
+    }
+  }
+
   updateSheetHeight()
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', updateSheetHeight)
     window.visualViewport.addEventListener('scroll', updateSheetHeight)
   }
 
-  initAuth()
-    .then(() => loadData())
-    .then(() => { subscribeRealtime(); wireEvents(); renderAll() })</script>
+  boot()
+  </script>
 </body>
 </html>
