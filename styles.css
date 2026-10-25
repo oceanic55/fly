@@ -182,6 +182,12 @@ main {
   text-transform: uppercase; letter-spacing: 0.4px;
   flex-shrink: 0;
 }
+.year-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .stats-grid .panel-head {
   display: flex;
   justify-content: space-between;
@@ -225,6 +231,12 @@ main {
 .year-table tr:hover td { background: var(--panel-2); }
 .year-table td:first-child { font-weight: 600; }
 .year-table td:last-child { text-align: right; color: var(--dim); }
+.flight-table .year-group-row td {
+  background: var(--panel-2);
+  color: var(--accent-2);
+  font-weight: 700;
+  padding: 7px 10px;
+}
 .year-link {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -444,6 +456,19 @@ main {
   outline: none;
 }
 .form-group input:focus { border-color: var(--accent); }
+.date-entry-controls { display: flex; align-items: end; gap: 6px; }
+.date-entry-controls > input[type="date"] { flex: 1; min-width: 0; }
+.date-year-control {
+  flex: 0 0 76px;
+  color: var(--dim);
+  font-size: 9px !important;
+}
+.date-year-control input[type="number"] {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  padding: 6px 5px;
+}
 .form-actions {
   display: flex; gap: 4px;
   padding: 10px 12px;

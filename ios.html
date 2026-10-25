@@ -88,6 +88,15 @@
       padding: 10px 12px; scrollbar-width: none; flex-shrink: 0;
       border-bottom: 1px solid var(--line-soft);
     }
+    .year-sort-wrap {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 8px 12px; border-bottom: 1px solid var(--line-soft); flex-shrink: 0;
+      color: var(--muted); font-size: 12px;
+    }
+    .year-sort-wrap select {
+      background: var(--bg-top); border: 1px solid var(--line); color: var(--text);
+      font: inherit; padding: 5px 8px; border-radius: 2px;
+    }
     .year-pills-wrap::-webkit-scrollbar { display: none; }
     .year-pill {
       flex-shrink: 0; padding: 6px 16px; border: 1px solid var(--line);
@@ -142,6 +151,12 @@
       padding: 9px 12px; font: inherit; font-size: 14px; color: var(--text); outline: none;
     }
     .search-bar-wrap input:focus { border-color: var(--accent); }
+    .entry-search-wrap { display: flex; align-items: center; gap: 8px; }
+    .entry-search-wrap input { flex: 1; min-width: 0; }
+    .entry-search-wrap select {
+      background: var(--bg-top); border: 1px solid var(--line); color: var(--text);
+      font: inherit; font-size: 12px; padding: 8px 6px; flex-shrink: 0;
+    }
 
     /* ── Aggregate views (airports / countries / airlines) ── */
     .agg-list {
@@ -259,6 +274,14 @@
       padding: 11px 12px; font: inherit; font-size: 16px; color: var(--text); outline: none;
     }
     .sheet-form .form-group input:focus { border-color: var(--accent); }
+    .date-entry-controls { display: flex; align-items: end; gap: 8px; }
+    .date-entry-controls > input[type="date"] { flex: 1; min-width: 0; }
+    .date-year-control {
+      flex: 0 0 82px; color: var(--dim) !important; font-size: 10px !important;
+    }
+    .date-year-control input[type="number"] {
+      display: block; width: 100% !important; margin-top: 4px; padding: 11px 8px !important;
+    }
     .city-hint { font-size: 11px; color: var(--accent-2); margin-top: 5px; min-height: 1.1em; }
 
     .sheet-actions {
@@ -360,7 +383,12 @@
       <input type="hidden" id="flightId">
       <div class="form-group">
         <label for="sDate">Date</label>
-        <input id="sDate" type="date" required autocomplete="off">
+        <div class="date-entry-controls">
+          <input id="sDate" type="date" required autocomplete="off">
+          <label class="date-year-control" for="sDateYear">Year
+            <input id="sDateYear" type="number" min="1000" max="9999" step="1" inputmode="numeric" aria-label="Enter year directly" autocomplete="off">
+          </label>
+        </div>
       </div>
       <div class="form-group">
         <label for="sDep">Departure</label>
@@ -406,6 +434,13 @@
   <main>
     <!-- Dashboard panel -->
     <section id="dashboard" class="panel active">
+      <div class="year-sort-wrap">
+        <label for="yearSort">Years</label>
+        <select id="yearSort" aria-label="Sort years">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </div>
       <div class="year-pills-wrap" id="yearPills"></div>
       <div class="flight-cards" id="dashCards">
         <p id="loadingMsg">Loading…</p>
@@ -438,8 +473,12 @@
 
     <!-- Entry panel -->
     <section id="entry" class="panel">
-      <div class="search-bar-wrap">
+      <div class="search-bar-wrap entry-search-wrap">
         <input id="entrySearch" type="search" placeholder="Search flights…" autocomplete="off">
+        <select id="entryDateSort" aria-label="Sort flights by date">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
       </div>
       <div class="flight-cards" id="entryCards"></div>
     </section>
@@ -460,6 +499,7 @@
     shortAirportName,
     flightYear,
     sortByDateDesc,
+    sortByDateAsc,
     flightsForIds,
   } = core
 
@@ -476,6 +516,8 @@
 
   let _view = 'dashboard'
   let _activeYear = null
+  let _yearSort = 'newest'
+  let _entryDateSort = 'newest'
   let _dashDetailId = null
   let _editId = null
 
@@ -568,10 +610,14 @@
   }
 
   function renderYearPills() {
-    const years = _agg.byYear.map(row => row.year)
-    if (!years.length) { $('yearPills').innerHTML = ''; return }
-    if (!_activeYear || !years.includes(_activeYear)) _activeYear = years[0]
-    $('yearPills').innerHTML = _agg.byYear.map(row =>
+    const rows = [..._agg.byYear].sort((a, b) =>
+      _yearSort === 'oldest' ? a.year - b.year : b.year - a.year
+    )
+    const years = rows.map(row => row.year)
+    if (!_activeYear || (_activeYear !== 'all' && !years.includes(_activeYear))) {
+      _activeYear = years[0] || 'all'
+    }
+    $('yearPills').innerHTML = `<button type="button" class="year-pill${_activeYear === 'all' ? ' active' : ''}" data-year="all">ALL · ${_agg.totals.flights}</button>` + rows.map(row =>
       `<button type="button" class="year-pill${row.year === _activeYear ? ' active' : ''}" data-year="${row.year}">${row.year} · ${row.count}</button>`
     ).join('')
   }
@@ -631,7 +677,9 @@
   // ── Dashboard ─────────────────────────────────────────────────────────────
   function renderDashCards() {
     const year = _activeYear
-    const cards = year
+    const cards = year === 'all'
+      ? flights.slice().sort(sortByDateAsc)
+      : year
       ? flights.filter(f => flightYear(f) === year).sort(sortByDateDesc)
       : []
 
@@ -643,8 +691,18 @@
       return
     }
 
+    let cardsHtml = ''
+    let currentYear = null
+    for (const flight of cards) {
+      const yearGroup = flightYear(flight)
+      if (year === 'all' && yearGroup && yearGroup !== currentYear) {
+        currentYear = yearGroup
+        cardsHtml += `<div class="breakdown-year">${yearGroup}</div>`
+      }
+      cardsHtml += flightCard(flight)
+    }
     $('dashCards').innerHTML = cards.length
-      ? cards.map(flightCard).join('')
+      ? cardsHtml
       : `<p class="no-flights">${
         !flights.length
           ? 'No flights yet. Tap + to add one, or Import a data file.'
@@ -663,7 +721,7 @@
       const dep = map.get(normCode(flight.departure)) || {}
       const hay = (JSON.stringify(flight) + ' ' + [dep.city, dep.name, arr.city, arr.name, arr.country].join(' ')).toLowerCase()
       return hay.includes(q)
-    }).sort(sortByDateDesc)
+    }).sort(_entryDateSort === 'oldest' ? sortByDateAsc : sortByDateDesc)
 
     $('entryCards').innerHTML = rows.length
       ? rows.map(flightCard).join('')
@@ -761,7 +819,7 @@
 
     const rows = _agg.byAirport.filter(group =>
       matches([group.code, group.name, group.city, group.country].join(' '), _airportQuery)
-    )
+    ).sort((a, b) => a.code.localeCompare(b.code))
     container.innerHTML = rows.length
       ? rows.map(airportCard).join('')
       : '<p class="no-flights">No airports match.</p>'
@@ -822,7 +880,7 @@
 
     const rows = _agg.byCountry.filter(group =>
       matches([group.country, group.airportCodes.join(' ')].join(' '), _countryQuery)
-    )
+    ).sort((a, b) => a.country.localeCompare(b.country))
     container.innerHTML = rows.length
       ? rows.map(countryCard).join('')
       : '<p class="no-flights">No countries match.</p>'
@@ -880,7 +938,7 @@
 
     const rows = _agg.byAirline.filter(group =>
       matches([group.airline, group.countries.join(' '), group.aircraft.map(item => item.name).join(' ')].join(' '), _airlineQuery)
-    )
+    ).sort((a, b) => a.airline.localeCompare(b.airline))
     container.innerHTML = rows.length
       ? rows.map(airlineCard).join('')
       : '<p class="no-flights">No airlines match.</p>'
@@ -905,6 +963,7 @@
     $('sheetTitle').textContent = flight ? 'Edit flight' : 'Add flight'
     $('flightId').value = flight ? flight.id : ''
     $('sDate').value = flight ? flight.date : ''
+    $('sDateYear').value = flight ? flight.date.slice(0, 4) : ''
     $('sDep').value = flight ? flight.departure : ''
     $('sArr').value = flight ? flight.arrival : ''
     $('sAirline').value = flight ? flight.airline : ''
@@ -1086,6 +1145,11 @@
 
   // ── Events ────────────────────────────────────────────────────────────────
   function wireEvents() {
+    $('yearSort').addEventListener('change', event => {
+      _yearSort = event.target.value
+      renderYearPills()
+    })
+
     document.querySelectorAll('.bnav-btn').forEach(button =>
       button.addEventListener('click', () => switchTab(button.dataset.tab))
     )
@@ -1097,7 +1161,7 @@
 
       const yearPill = event.target.closest('.year-pill')
       if (yearPill) {
-        _activeYear = parseInt(yearPill.dataset.year, 10)
+        _activeYear = yearPill.dataset.year === 'all' ? 'all' : parseInt(yearPill.dataset.year, 10)
         _dashDetailId = null
         renderYearPills()
         renderDashCards()
@@ -1233,6 +1297,10 @@
 
     // Search
     $('entrySearch').addEventListener('input', event => renderEntryCards(event.target.value))
+    $('entryDateSort').addEventListener('change', event => {
+      _entryDateSort = event.target.value
+      renderEntryCards($('entrySearch').value)
+    })
     $('airportSearch').addEventListener('input', event => {
       _airportQuery = event.target.value
       renderAirportView()
@@ -1244,6 +1312,19 @@
     $('airlineSearch').addEventListener('input', event => {
       _airlineQuery = event.target.value
       renderAirlineView()
+    })
+
+    $('sDate').addEventListener('input', event => {
+      $('sDateYear').value = event.target.value.slice(0, 4)
+    })
+    $('sDateYear').addEventListener('change', event => {
+      const updated = core.dateInYear($('sDate').value, event.target.value)
+      if (updated) {
+        $('sDate').value = updated
+        event.target.value = updated.slice(0, 4)
+      } else {
+        event.target.value = $('sDate').value.slice(0, 4)
+      }
     })
 
     // Status actions

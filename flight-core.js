@@ -53,6 +53,18 @@
 
   const isValidDate = value => dateValue(value) > 0
 
+  function dateInYear(date, yearValue) {
+    const year = Number(yearValue)
+    if (!Number.isInteger(year) || year < 1000 || year > 9999) return ''
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date || ''))
+    const month = match ? Number(match[2]) : 1
+    const day = match ? Number(match[3]) : 1
+    if (month < 1 || month > 12) return ''
+    const maxDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+    const validDay = Math.min(Math.max(day, 1), maxDay)
+    return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`
+  }
+
   function isValidFlight(flight) {
     if (!flight) return false
     return !!(
@@ -111,6 +123,17 @@
       return db - da
     }
     return idNumber(b.id) - idNumber(a.id) || String(b.id).localeCompare(String(a.id))
+  }
+
+  function sortByDateAsc(a, b) {
+    const da = dateValue(a)
+    const db = dateValue(b)
+    if (da !== db) {
+      if (!da) return 1
+      if (!db) return -1
+      return da - db
+    }
+    return idNumber(a.id) - idNumber(b.id) || String(a.id).localeCompare(String(b.id))
   }
 
   function serializeFlights(flights) {
@@ -571,12 +594,14 @@
     makeId,
     escapeHtml,
     flightYear,
+    dateInYear,
     dateValue,
     isValidDate,
     isValidFlight,
     normalizeFlight,
     normalizeAirport,
     sortByDateDesc,
+    sortByDateAsc,
     serializeFlights,
     serializeAirports,
     serializeData,

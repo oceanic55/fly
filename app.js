@@ -14,6 +14,7 @@ const {
   shortAirportName,
   flightYear,
   sortByDateDesc,
+  sortByDateAsc,
   flightsForIds,
 } = core
 
@@ -30,6 +31,8 @@ let statusActions = []
 
 let selectedYear = null
 let selectedYearFlightId = null
+let yearSort = 'newest'
+let entryDateSort = 'newest'
 
 let selectedAirport = null
 let selectedCountry = null
@@ -39,7 +42,6 @@ let countryBreakdown = null
 let airlineBreakdown = null
 
 let airportQuery = ''
-let airportSort = 'total'
 let countryQuery = ''
 let airlineQuery = ''
 
@@ -129,8 +131,11 @@ function renderStats() {
 }
 
 function renderDashboard() {
-  $('byYear').innerHTML = agg.byYear.length
-    ? agg.byYear.map(row =>
+  const yearRows = [...agg.byYear].sort((a, b) =>
+    yearSort === 'oldest' ? a.year - b.year : b.year - a.year
+  )
+  $('byYear').innerHTML = yearRows.length
+    ? `<tr><td><button type="button" class="year-link" data-year="all">ALL</button></td><td>${agg.totals.flights}</td></tr>` + yearRows.map(row =>
       `<tr><td><button type="button" class="year-link" data-year="${row.year}">${row.year}</button></td><td>${row.count}</td></tr>`
     ).join('')
     : '<tr><td colspan="2" class="empty-cell">No flights yet.</td></tr>'
@@ -150,15 +155,28 @@ function renderDashboard() {
 function renderYearDetails(year, keepFlight) {
   selectedYear = year
   if (!keepFlight) selectedYearFlightId = null
-  const rows = flights.filter(f => flightYear(f) === year).sort(sortByDateDesc)
-  $('yearDetailsTitle').textContent = `Flights in ${year}`
+  const allYears = year === 'all'
+  const rows = allYears
+    ? flights.slice().sort(sortByDateAsc)
+    : flights.filter(f => flightYear(f) === year).sort(sortByDateDesc)
+  $('yearDetailsTitle').textContent = allYears ? 'All flights · oldest first' : `Flights in ${year}`
   if (selectedYearFlightId && rows.some(f => f.id === selectedYearFlightId)) {
     renderFlightDetail(selectedYearFlightId)
     return
   }
   selectedYearFlightId = null
+  let rowsHtml = ''
+  let currentYear = null
+  for (const flight of rows) {
+    const yearGroup = flightYear(flight)
+    if (allYears && yearGroup && yearGroup !== currentYear) {
+      currentYear = yearGroup
+      rowsHtml += `<tr class="year-group-row"><td colspan="9">${yearGroup}</td></tr>`
+    }
+    rowsHtml += flightTableRow(flight, { clickable: true })
+  }
   $('yearFlightRows').innerHTML = rows.length
-    ? rows.map(f => flightTableRow(f, { clickable: true })).join('')
+    ? rowsHtml
     : '<tr><td colspan="9" class="empty-cell">No flights in this year.</td></tr>'
 }
 
@@ -218,7 +236,7 @@ function renderFlights() {
       [dep.city, dep.name, dep.country, arr.city, arr.name, arr.country].join(' ')
     ).toLowerCase()
     return haystack.includes(query)
-  }).sort(sortByDateDesc)
+  }).sort(entryDateSort === 'oldest' ? sortByDateAsc : sortByDateDesc)
 
   $('flightRows').innerHTML = rows.length
     ? rows.map(flight => flightTableRow(flight, { clickable: true })).join('')
@@ -318,15 +336,9 @@ function summaryChips(items) {
 
 // ─── Airports view ──────────────────────────────────────────────────────────
 function renderAirportsIndex() {
-  let rows = agg.byAirport.filter(group =>
+  const rows = agg.byAirport.filter(group =>
     matches([group.code, group.name, group.city, group.country].join(' '), airportQuery)
-  )
-
-  if (airportSort === 'name') {
-    rows = rows.slice().sort((a, b) => a.code.localeCompare(b.code))
-  } else if (airportSort === 'recent') {
-    rows = rows.slice().sort((a, b) => (b.last || '').localeCompare(a.last || '') || a.code.localeCompare(b.code))
-  }
+  ).sort((a, b) => a.code.localeCompare(b.code))
 
   $('airportsTotal').textContent = `${agg.byAirport.length} airports · ${agg.totals.flights} flights`
   $('airportRows').innerHTML = rows.length
@@ -389,7 +401,7 @@ function renderAirportDetail() {
 function renderCountriesIndex() {
   const rows = agg.byCountry.filter(group =>
     matches([group.country, group.airportCodes.join(' ')].join(' '), countryQuery)
-  )
+  ).sort((a, b) => a.country.localeCompare(b.country))
 
   $('countriesTotal').textContent = `${agg.byCountry.length} countries · ${agg.totals.flights} flights`
   $('countryRows').innerHTML = rows.length
@@ -459,7 +471,7 @@ function renderCountryDetail() {
 function renderAirlinesIndex() {
   const rows = agg.byAirline.filter(group =>
     matches([group.airline, group.countries.join(' '), group.aircraft.map(a => a.name).join(' ')].join(' '), airlineQuery)
-  )
+  ).sort((a, b) => a.airline.localeCompare(b.airline))
 
   $('airlinesTotal').textContent = `${agg.byAirline.length} airlines · ${agg.totals.flights} flights`
   $('airlineRows').innerHTML = rows.length
@@ -549,6 +561,7 @@ function editFlight(id) {
   if (!flight) return
   $('flightId').value = flight.id
   $('date').value = flight.date
+  $('dateYear').value = flight.date.slice(0, 4)
   $('departure').value = flight.departure
   $('arrival').value = flight.arrival
   $('airline').value = flight.airline
@@ -634,7 +647,24 @@ function wireEvents() {
   })
 
   $('flightSearch').addEventListener('input', renderFlights)
+  $('entryDateSort').addEventListener('change', event => {
+    entryDateSort = event.target.value
+    renderFlights()
+  })
   $('arrival').addEventListener('input', updateCityHint)
+
+  $('date').addEventListener('input', event => {
+    $('dateYear').value = event.target.value.slice(0, 4)
+  })
+  $('dateYear').addEventListener('change', event => {
+    const updated = core.dateInYear($('date').value, event.target.value)
+    if (updated) {
+      $('date').value = updated
+      event.target.value = updated.slice(0, 4)
+    } else {
+      event.target.value = $('date').value.slice(0, 4)
+    }
+  })
 
   $('closeYearDetails').addEventListener('click', () => {
     selectedYear = null
@@ -643,13 +673,14 @@ function wireEvents() {
     $('yearFlightRows').innerHTML = '<tr><td colspan="9" class="empty-cell">Click a year on the left to show its flights here.</td></tr>'
   })
 
+  $('yearSort').addEventListener('change', event => {
+    yearSort = event.target.value
+    renderDashboard()
+  })
+
   // Index search / sort
   $('airportSearch').addEventListener('input', event => {
     airportQuery = event.target.value
-    renderAirportsIndex()
-  })
-  $('airportSort').addEventListener('change', event => {
-    airportSort = event.target.value
     renderAirportsIndex()
   })
   $('countrySearch').addEventListener('input', event => {
@@ -694,7 +725,7 @@ function wireEvents() {
 
     if (year) {
       selectedYearFlightId = null
-      renderYearDetails(Number(year))
+      renderYearDetails(year === 'all' ? 'all' : Number(year))
     }
     if (backYear && selectedYear) {
       selectedYearFlightId = null

@@ -32,7 +32,13 @@
     <section id="dashboard" class="panel active">
       <div class="dash-grid">
         <div class="panel-side">
-          <div class="panel-head">Flights by year</div>
+          <div class="panel-head year-panel-head">
+            <span>Flights by year</span>
+            <select id="yearSort" class="sort-select" aria-label="Sort years">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </div>
           <table class="year-table">
             <tbody id="byYear"></tbody>
           </table>
@@ -62,11 +68,6 @@
           <div class="panel-head"><span>Airports</span><span id="airportsTotal" class="head-total"></span></div>
           <div class="view-controls">
             <input id="airportSearch" class="search-input" type="search" placeholder="Search airport, city, country…" autocomplete="off">
-            <select id="airportSort" class="sort-select">
-              <option value="total">Most used</option>
-              <option value="name">A–Z</option>
-              <option value="recent">Last visit</option>
-            </select>
           </div>
           <div class="table-scroll">
             <table class="index-table">
@@ -155,7 +156,12 @@
           <input type="hidden" id="flightId">
           <div class="form-group">
             <label for="date">Date</label>
-            <input id="date" type="date" required>
+            <div class="date-entry-controls">
+              <input id="date" type="date" required>
+              <label class="date-year-control" for="dateYear">Year
+                <input id="dateYear" type="number" min="1000" max="9999" step="1" inputmode="numeric" aria-label="Enter year directly">
+              </label>
+            </div>
           </div>
           <div class="form-group">
             <label for="departure">Departure</label>
@@ -190,7 +196,13 @@
           </div>
         </div>
         <div class="panel-main">
-          <div class="panel-head"><span>All flights</span></div>
+          <div class="panel-head year-panel-head">
+            <span>All flights</span>
+            <select id="entryDateSort" class="sort-select" aria-label="Sort flights by date">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </div>
           <div class="table-scroll">
             <table class="flight-table">
               <thead>
