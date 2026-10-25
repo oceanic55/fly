@@ -381,6 +381,7 @@
     const byCountryMap = new Map()
     const byAirlineMap = new Map()
     const byAircraftMap = new Map()
+    const unknownAircraftFlightIds = []
     let firstDate = ''
     let lastDate = ''
     let unknownAircraft = 0
@@ -485,9 +486,16 @@
       // Aircraft
       const aircraft = normText(flight.aircraft)
       if (aircraft) {
-        byAircraftMap.set(aircraft, (byAircraftMap.get(aircraft) || 0) + 1)
+        let group = byAircraftMap.get(aircraft)
+        if (!group) {
+          group = { count: 0, flightIds: [] }
+          byAircraftMap.set(aircraft, group)
+        }
+        group.count += 1
+        group.flightIds.push(flight.id)
       } else {
         unknownAircraft += 1
+        unknownAircraftFlightIds.push(flight.id)
       }
     }
 
@@ -540,10 +548,10 @@
       .sort((a, b) => b.flights - a.flights || a.airline.localeCompare(b.airline))
 
     const byAircraft = [...byAircraftMap.entries()]
-      .map(([name, count]) => ({ name, count, known: true }))
+      .map(([name, group]) => ({ name, displayName: name, count: group.count, known: true, flightIds: group.flightIds }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
     if (unknownAircraft) {
-      byAircraft.push({ name: '', count: unknownAircraft, known: false })
+      byAircraft.push({ name: '', displayName: 'Not available', count: unknownAircraft, known: false, flightIds: unknownAircraftFlightIds })
     }
 
     const airlines = new Set(flights.map(f => normText(f.airline).toUpperCase()).filter(Boolean))

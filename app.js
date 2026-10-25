@@ -19,6 +19,7 @@ const {
 } = core
 
 const $ = id => document.getElementById(id)
+const flightDatePicker = window.FlightDatePicker.mount($('date'))
 
 // ─── App state ──────────────────────────────────────────────────────────────
 let flights = []
@@ -40,10 +41,14 @@ let selectedAirline = null
 let airportBreakdown = null
 let countryBreakdown = null
 let airlineBreakdown = null
+let selectedAircraft = null
+let aircraftBreakdown = null
 
 let airportQuery = ''
 let countryQuery = ''
 let airlineQuery = ''
+let aircraftQuery = ''
+let aircraftSort = 'name'
 
 let pendingDraft = null
 let pendingLegacy = null
@@ -120,7 +125,7 @@ function renderStats() {
     { value: totals.airports, label: 'Airports', view: 'airports' },
     { value: totals.countries, label: 'Countries', view: 'countries' },
     { value: totals.airlines, label: 'Airlines', view: 'airlines' },
-    { value: totals.aircraft, label: 'Aircraft', view: '' },
+    { value: totals.aircraft, label: 'Aircraft', view: 'aircraft' },
   ]
   $('statCards').innerHTML = chips.map(chip => {
     const content = `<strong>${chip.value}</strong><span>${chip.label}</span>`
@@ -249,17 +254,21 @@ function renderFlights() {
 function breakdownTable(rows, mode, key) {
   if (!rows.length) return '<div class="empty-state">No flights recorded.</div>'
   const map = airportMap()
-  const columns = mode === 'airline' ? 5 : 6
+  const columns = mode === 'airline' || mode === 'aircraft' ? 5 : 6
   const head = mode === 'airport'
     ? '<tr><th>Date</th><th>Direction</th><th>Route</th><th>Other airport</th><th>Airline</th><th>Aircraft</th></tr>'
     : mode === 'country'
       ? '<tr><th>Date</th><th>Route</th><th>Arrival airport</th><th>City</th><th>Airline</th><th>Aircraft</th></tr>'
-      : '<tr><th>Date</th><th>Route</th><th>City</th><th>Country</th><th>Aircraft</th></tr>'
+      : mode === 'aircraft'
+        ? '<tr><th>Date</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Airline</th></tr>'
+        : '<tr><th>Date</th><th>Route</th><th>City</th><th>Country</th><th>Aircraft</th></tr>'
   const widths = mode === 'airport'
     ? ['96px', '78px', '132px', null, '190px', '130px']
     : mode === 'country'
       ? ['96px', '132px', null, '150px', '190px', '130px']
-      : ['96px', '132px', '180px', '180px', '130px']
+      : mode === 'aircraft'
+        ? ['96px', '132px', '90px', '90px', '190px']
+        : ['96px', '132px', '180px', '180px', '130px']
   const colgroup = `<colgroup>${widths.map(width => `<col${width ? ` style="width:${width}"` : ''}>`).join('')}</colgroup>`
 
   let html = `<table class="breakdown-table">${colgroup}<thead>${head}</thead><tbody>`
@@ -295,6 +304,14 @@ function breakdownTable(rows, mode, key) {
         <td>${esc(arr.city || '—')}</td>
         <td>${esc(flight.airline || '—')}</td>
         <td>${esc(flight.aircraft || '—')}</td>
+      </tr>`
+    } else if (mode === 'aircraft') {
+      html += `<tr class="clickable-row" data-breakdown-flight="${esc(flight.id)}">
+        <td>${esc(dateOrDash(flight.date))}</td>
+        <td>${route}</td>
+        <td>${esc(flight.departure || '—')}</td>
+        <td>${esc(flight.arrival || '—')}</td>
+        <td>${esc(flight.airline || '—')}</td>
       </tr>`
     } else {
       html += `<tr class="clickable-row" data-breakdown-flight="${esc(flight.id)}">
@@ -533,10 +550,55 @@ function renderAirlineDetail() {
     ${breakdownTable(rows, 'airline', group.airline)}`
 }
 
+function aircraftKey(group) { return group.known ? group.name : '__missing__' }
+
+function renderAircraftIndex() {
+  const rows = agg.byAircraft.filter(group => matches(group.displayName, aircraftQuery))
+    .sort(aircraftSort === 'flights'
+      ? (a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName)
+      : (a, b) => a.displayName.localeCompare(b.displayName))
+  $('aircraftTotal').textContent = `${agg.totals.aircraft} types · ${agg.totals.unknownAircraft} not available`
+  $('aircraftRows').innerHTML = rows.length
+    ? rows.map(group => `<tr class="clickable-row${selectedAircraft === aircraftKey(group) ? ' active-row' : ''}" data-aircraft="${aircraftKey(group)}">
+        <td><strong>${esc(group.displayName)}</strong></td><td class="num"><strong>${group.count}</strong></td>
+      </tr>`).join('')
+    : '<tr><td colspan="2" class="empty-cell">No aircraft match.</td></tr>'
+  document.querySelectorAll('[data-aircraft-sort]').forEach(button => {
+    const active = button.dataset.aircraftSort === aircraftSort
+    button.classList.toggle('active', active)
+    button.setAttribute('aria-pressed', String(active))
+  })
+}
+
+function renderAircraftDetail() {
+  const title = $('aircraftDetailTitle')
+  const body = $('aircraftDetailBody')
+  if (!title || !body) return
+  if (aircraftBreakdown) {
+    const flight = flights.find(row => row.id === aircraftBreakdown)
+    if (flight) {
+      title.textContent = `${flight.departure} → ${flight.arrival}`
+      body.innerHTML = breakdownFlightHtml(flight, `← Back to ${selectedAircraft === '__missing__' ? 'Not available' : selectedAircraft}`)
+      return
+    }
+    aircraftBreakdown = null
+  }
+  const group = agg.byAircraft.find(row => aircraftKey(row) === selectedAircraft)
+  if (!group) {
+    title.textContent = 'Select an aircraft'
+    body.innerHTML = '<div class="empty-state">Click an aircraft in the list to see its flights by date.</div>'
+    return
+  }
+  const rows = flightsForIds(flights, group.flightIds)
+  title.textContent = group.displayName
+  body.innerHTML = `${summaryChips([{ value: group.count, label: 'flights' }])}${breakdownTable(rows, 'aircraft', group.name)}`
+}
+
 // ─── Render everything ──────────────────────────────────────────────────────
 function renderAll() {
   agg = core.aggregate(flights, airports)
   renderStats()
+  renderEntrySuggestions()
   renderDashboard()
   renderFlights()
   renderAirportsIndex()
@@ -545,6 +607,39 @@ function renderAll() {
   renderCountryDetail()
   renderAirlinesIndex()
   renderAirlineDetail()
+  renderAircraftIndex()
+  renderAircraftDetail()
+}
+
+function renderEntrySuggestions() {
+  const airportsByCode = new Map()
+  for (const airport of airports) {
+    const code = normCode(airport.iata)
+    if (code) airportsByCode.set(code, [airport.name, airport.city, airport.country].filter(Boolean).join(' · '))
+  }
+  for (const flight of flights) {
+    for (const code of [normCode(flight.departure), normCode(flight.arrival)]) {
+      if (code && !airportsByCode.has(code)) airportsByCode.set(code, '')
+    }
+  }
+
+  const airlines = new Map()
+  const aircraftTypes = new Map()
+  for (const flight of flights) {
+    const airline = normText(flight.airline)
+    const aircraft = normText(flight.aircraft)
+    if (airline && !airlines.has(airline.toLocaleLowerCase())) airlines.set(airline.toLocaleLowerCase(), airline)
+    if (aircraft && !aircraftTypes.has(aircraft.toLocaleLowerCase())) aircraftTypes.set(aircraft.toLocaleLowerCase(), aircraft)
+  }
+
+  const fill = (id, values) => {
+    $(id).innerHTML = values.map(([value, label]) =>
+      `<option value="${esc(value)}"${label ? ` label="${esc(label)}"` : ''}></option>`
+    ).join('')
+  }
+  fill('airportSuggestions', [...airportsByCode.entries()].sort(([a], [b]) => a.localeCompare(b)))
+  fill('airlineSuggestions', [...airlines.values()].sort((a, b) => a.localeCompare(b)).map(value => [value, '']))
+  fill('aircraftSuggestions', [...aircraftTypes.values()].sort((a, b) => a.localeCompare(b)).map(value => [value, '']))
 }
 
 // ─── Form helpers ───────────────────────────────────────────────────────────
@@ -560,8 +655,7 @@ function editFlight(id) {
   const flight = flights.find(row => row.id === id)
   if (!flight) return
   $('flightId').value = flight.id
-  $('date').value = flight.date
-  $('dateYear').value = flight.date.slice(0, 4)
+  flightDatePicker.set(flight.date)
   $('departure').value = flight.departure
   $('arrival').value = flight.arrival
   $('airline').value = flight.airline
@@ -610,10 +704,25 @@ function wireEvents() {
   })
 
   // Flight form (add / edit)
+  $('flightForm').addEventListener('keydown', event => {
+    if (event.key === 'Enter') event.preventDefault()
+  })
+  $('flightForm').addEventListener('click', event => {
+    if (event.detail > 0 && event.target.closest('button[type="submit"]')) $('flightForm').dataset.explicitSave = 'true'
+  })
   $('flightForm').addEventListener('submit', async event => {
     event.preventDefault()
+    if ($('flightForm').dataset.explicitSave !== 'true') return
+    $('flightForm').dataset.explicitSave = ''
+    if (!flightDatePicker.get()) {
+      flightDatePicker.setInvalid(true)
+      flightDatePicker.focus()
+      return
+    }
     const departure = normCode($('departure').value)
     const arrival = normCode($('arrival').value)
+    $('departure').value = departure
+    $('arrival').value = arrival
     await ensureAirportKnown(departure)
     await ensureAirportKnown(arrival)
 
@@ -635,8 +744,6 @@ function wireEvents() {
     renderAll()
   })
 
-  $('clearFlight').addEventListener('click', clearFlightForm)
-
   $('deleteFlight').addEventListener('click', () => {
     const id = $('flightId').value
     if (!id || !confirm('Delete this selected flight?')) return
@@ -652,19 +759,12 @@ function wireEvents() {
     renderFlights()
   })
   $('arrival').addEventListener('input', updateCityHint)
-
-  $('date').addEventListener('input', event => {
-    $('dateYear').value = event.target.value.slice(0, 4)
-  })
-  $('dateYear').addEventListener('change', event => {
-    const updated = core.dateInYear($('date').value, event.target.value)
-    if (updated) {
-      $('date').value = updated
-      event.target.value = updated.slice(0, 4)
-    } else {
-      event.target.value = $('date').value.slice(0, 4)
-    }
-  })
+  for (const id of ['departure', 'arrival']) {
+    $(id).addEventListener('change', event => {
+      event.target.value = normCode(event.target.value)
+      if (id === 'arrival') updateCityHint()
+    })
+  }
 
   $('closeYearDetails').addEventListener('click', () => {
     selectedYear = null
@@ -691,6 +791,16 @@ function wireEvents() {
     airlineQuery = event.target.value
     renderAirlinesIndex()
   })
+  $('aircraftSearch').addEventListener('input', event => {
+    aircraftQuery = event.target.value
+    renderAircraftIndex()
+  })
+  $('aircraftRows').closest('table').addEventListener('click', event => {
+    const sortButton = event.target.closest('[data-aircraft-sort]')
+    if (!sortButton) return
+    aircraftSort = sortButton.dataset.aircraftSort
+    renderAircraftIndex()
+  })
 
   $('closeAirportDetail').addEventListener('click', () => {
     selectedAirport = null
@@ -710,6 +820,12 @@ function wireEvents() {
     renderAirlinesIndex()
     renderAirlineDetail()
   })
+  $('closeAircraftDetail').addEventListener('click', () => {
+    selectedAircraft = null
+    aircraftBreakdown = null
+    renderAircraftIndex()
+    renderAircraftDetail()
+  })
 
   document.body.addEventListener('click', event => {
     const year = event.target.dataset && event.target.dataset.year
@@ -719,6 +835,7 @@ function wireEvents() {
     const airportRow = event.target.closest('[data-airport]')
     const countryRow = event.target.closest('[data-country]')
     const airlineRow = event.target.closest('[data-airline]')
+    const aircraftRow = event.target.closest('[data-aircraft]')
     const jumpAirport = event.target.closest('[data-jump-airport]')
     const breakdownRow = event.target.closest('[data-breakdown-flight]')
     const breakdownBack = event.target.closest('[data-breakdown-back]')
@@ -752,6 +869,12 @@ function wireEvents() {
       renderAirlinesIndex()
       renderAirlineDetail()
     }
+    if (aircraftRow) {
+      selectedAircraft = aircraftRow.dataset.aircraft
+      aircraftBreakdown = null
+      renderAircraftIndex()
+      renderAircraftDetail()
+    }
     if (jumpAirport) {
       selectedAirport = jumpAirport.dataset.jumpAirport
       airportBreakdown = null
@@ -770,6 +893,9 @@ function wireEvents() {
       } else if (event.target.closest('#airlineDetailBody')) {
         airlineBreakdown = id
         renderAirlineDetail()
+      } else if (event.target.closest('#aircraftDetailBody')) {
+        aircraftBreakdown = id
+        renderAircraftDetail()
       }
     }
     if (breakdownBack) {
@@ -782,6 +908,9 @@ function wireEvents() {
       } else if (event.target.closest('#airlineDetailBody')) {
         airlineBreakdown = null
         renderAirlineDetail()
+      } else if (event.target.closest('#aircraftDetailBody')) {
+        aircraftBreakdown = null
+        renderAircraftDetail()
       }
     }
   })
@@ -794,14 +923,9 @@ function wireEvents() {
     if (action && typeof action.fn === 'function') action.fn()
   })
 
-  // Save / export / import
+  // Save / clear / import
   $('saveData').addEventListener('click', saveToFile)
-
-  $('exportJson').addEventListener('click', () => {
-    const payload = JSON.stringify({ flights, airports }, null, 2)
-    store.download('flights-backup.json', payload + '\n', 'application/json;charset=utf-8')
-    setStatus('Downloaded flights-backup.json', 'ok')
-  })
+  $('clearData').addEventListener('click', clearData)
 
   $('importJson').addEventListener('change', async event => {
     const file = event.target.files[0]
@@ -929,6 +1053,20 @@ function undoImport() {
   store.clearUndo()
   adoptData(undo.flights, undo.airports, { dirty: true, airportsChanged: true, source: 'import' })
   setStatus('Import undone — save to update data/', 'warn')
+}
+
+function clearData() {
+  if (!flights.length && !airports.length) {
+    setStatus('The page is already empty.', 'ok')
+    return
+  }
+  const confirmed = confirm(
+    `Clear ${flights.length} flights and ${airports.length} airport records from this page?\n\n` +
+    'The NDJSON file will only be replaced if you press Save.'
+  )
+  if (!confirmed) return
+  adoptData([], [], { dirty: true, airportsChanged: true, source: 'clear' })
+  setStatus('Page cleared · press Save to replace the NDJSON file with empty data.', 'warn')
 }
 
 // ─── Airport lookup ─────────────────────────────────────────────────────────

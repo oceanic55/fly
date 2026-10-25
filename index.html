@@ -13,7 +13,7 @@
       <h1>✈ FLY</h1>
       <label class="file-button" id="importLabel">Import <input id="importJson" type="file" accept=".json,.ndjson,.txt,application/json,application/x-ndjson"></label>
       <button id="saveData" title="Save data files (Ctrl/Cmd+S)">Save</button>
-      <button id="exportJson" title="Download a combined JSON backup">Export backup</button>
+      <button id="clearData" title="Clear all flights and airport records">Clear</button>
     </div>
     <div id="statCards"></div>
   </section>
@@ -25,6 +25,7 @@
     <button class="tab" data-tab="airports">Airports</button>
     <button class="tab" data-tab="countries">Countries</button>
     <button class="tab" data-tab="airlines">Airlines</button>
+    <button class="tab" data-tab="aircraft">Aircraft</button>
     <button class="tab" data-tab="entry">Data entry</button>
   </nav>
 
@@ -149,6 +150,33 @@
       </div>
     </section>
 
+    <section id="aircraft" class="panel">
+      <div class="dash-grid stats-grid">
+        <div class="panel-side">
+          <div class="panel-head"><span>Aircraft</span><span id="aircraftTotal" class="head-total"></span></div>
+          <div class="view-controls">
+            <input id="aircraftSearch" class="search-input" type="search" placeholder="Search aircraft…" autocomplete="off">
+          </div>
+          <div class="table-scroll">
+            <table class="index-table">
+              <colgroup><col><col style="width:70px"></colgroup>
+              <thead><tr><th><button type="button" class="aircraft-sort" data-aircraft-sort="name">Aircraft</button></th><th class="num"><button type="button" class="aircraft-sort" data-aircraft-sort="flights">Flights</button></th></tr></thead>
+              <tbody id="aircraftRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel-main">
+          <div class="panel-head">
+            <span id="aircraftDetailTitle">Select an aircraft</span>
+            <button id="closeAircraftDetail" type="button">Clear</button>
+          </div>
+          <div class="table-scroll" id="aircraftDetailBody">
+            <div class="empty-state">Click an aircraft in the list to see its flights by date.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="entry" class="panel">
       <div class="form-panel">
         <div class="panel-head">Add / Edit flight</div>
@@ -156,34 +184,31 @@
           <input type="hidden" id="flightId">
           <div class="form-group">
             <label for="date">Date</label>
-            <div class="date-entry-controls">
-              <input id="date" type="date" required>
-              <label class="date-year-control" for="dateYear">Year
-                <input id="dateYear" type="number" min="1000" max="9999" step="1" inputmode="numeric" aria-label="Enter year directly">
-              </label>
-            </div>
+            <input id="date" type="date" required>
           </div>
           <div class="form-group">
             <label for="departure">Departure</label>
-            <input id="departure" maxlength="4" required placeholder="AMS" autocapitalize="characters">
+            <input id="departure" maxlength="4" required placeholder="AMS" list="airportSuggestions" autocomplete="on" autocapitalize="none" spellcheck="false">
           </div>
           <div class="form-group">
             <label for="arrival">Arrival</label>
-            <input id="arrival" maxlength="4" required placeholder="PHL" autocapitalize="characters">
+            <input id="arrival" maxlength="4" required placeholder="PHL" list="airportSuggestions" autocomplete="on" autocapitalize="none" spellcheck="false">
             <div id="arrivalCity" class="city-hint"></div>
           </div>
           <div class="form-group">
             <label for="airline">Airline</label>
-            <input id="airline" placeholder="Airline">
+            <input id="airline" placeholder="Airline" list="airlineSuggestions" autocomplete="on">
           </div>
           <div class="form-group">
             <label for="aircraft">Aircraft</label>
-            <input id="aircraft" placeholder="Aircraft">
+            <input id="aircraft" placeholder="Aircraft" list="aircraftSuggestions" autocomplete="on">
           </div>
+          <datalist id="airportSuggestions"></datalist>
+          <datalist id="airlineSuggestions"></datalist>
+          <datalist id="aircraftSuggestions"></datalist>
           <div class="form-actions">
             <button type="submit">Save</button>
             <button type="button" id="deleteFlight" class="danger hidden">Delete</button>
-            <button type="button" id="clearFlight" class="sec">Clear</button>
           </div>
         </form>
       </div>
@@ -217,6 +242,7 @@
   </main>
 
   <script src="flight-core.js"></script>
+  <script src="flight-date-picker.js"></script>
   <script src="flight-store.js"></script>
   <script src="app.js"></script>
 </body>

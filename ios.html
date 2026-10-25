@@ -163,6 +163,16 @@
       flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
       padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;
     }
+    .aircraft-sort-row {
+      display: flex; justify-content: space-between; padding: 6px 13px;
+      background: var(--panel); border: 1px solid var(--line);
+    }
+    .aircraft-sort-row button {
+      border: 0; padding: 0; background: transparent; color: var(--muted);
+      font: inherit; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .3px; cursor: pointer;
+    }
+    .aircraft-sort-row button.active { color: var(--accent-2); }
     .agg-card {
       display: flex; align-items: center; gap: 10px; width: 100%;
       text-align: left; background: var(--panel); border: 1px solid var(--line);
@@ -274,14 +284,42 @@
       padding: 11px 12px; font: inherit; font-size: 16px; color: var(--text); outline: none;
     }
     .sheet-form .form-group input:focus { border-color: var(--accent); }
-    .date-entry-controls { display: flex; align-items: end; gap: 8px; }
-    .date-entry-controls > input[type="date"] { flex: 1; min-width: 0; }
-    .date-year-control {
-      flex: 0 0 82px; color: var(--dim) !important; font-size: 10px !important;
+    .flight-date-picker { position: relative; }
+    .flight-date-picker input[type="hidden"] { display: none; }
+    .flight-date-trigger {
+      width: 100%; min-height: 44px; text-align: left;
+      background: var(--panel); border: 1px solid var(--line); color: var(--accent-2);
+      padding: 11px 12px; font: inherit; font-size: 16px; cursor: pointer;
     }
-    .date-year-control input[type="number"] {
-      display: block; width: 100% !important; margin-top: 4px; padding: 11px 8px !important;
+    .flight-date-trigger:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+    .flight-date-picker.invalid .flight-date-trigger { border-color: var(--danger); }
+    .flight-date-calendar { margin-top: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--line); }
+    .flight-date-calendar[hidden] { display: none; }
+    .flight-date-heading { display: grid; grid-template-columns: 36px 1fr 76px 36px; gap: 6px; align-items: center; margin-bottom: 10px; }
+    .flight-date-nav, .flight-date-enter {
+      min-height: 36px; background: var(--bg-top); border: 1px solid var(--line); color: var(--text);
+      font: inherit; cursor: pointer;
     }
+    .flight-date-nav { font-size: 22px; line-height: 1; }
+    .flight-date-month, .flight-date-year {
+      min-width: 0; width: 100%; min-height: 36px; padding: 6px;
+      background: var(--bg-top); border: 1px solid var(--line); color: var(--text); font: inherit;
+    }
+    .flight-date-year { text-align: center; }
+    .flight-date-weekdays, .flight-date-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; }
+    .flight-date-weekdays { margin-bottom: 4px; }
+    .flight-date-weekday { color: var(--dim); font-size: 11px; font-weight: 600; padding: 5px 0; }
+    .flight-date-day {
+      min-height: 38px; border: 0; border-radius: 50%; background: transparent; color: var(--text);
+      font: inherit; font-size: 14px; cursor: pointer;
+    }
+    .flight-date-day.outside { color: var(--dim); }
+    .flight-date-day.selected { background: var(--accent); color: #fff; font-weight: 700; }
+    .flight-date-day:disabled { visibility: hidden; }
+    .flight-date-footer { display: flex; justify-content: flex-end; margin-top: 6px; }
+    .flight-date-enter { min-height: 40px; padding: 0 18px; color: var(--accent-2); }
+    .flight-date-enter:disabled { opacity: .45; cursor: not-allowed; }
+    .sheet-form .flight-date-calendar { position: static; width: 100%; }
     .city-hint { font-size: 11px; color: var(--accent-2); margin-top: 5px; min-height: 1.1em; }
 
     .sheet-actions {
@@ -361,6 +399,10 @@
       <svg viewBox="0 0 24 24"><path d="M21 3L3 10.5l6 2.5 2.5 6L21 3z"/><path d="M9 13l5-5"/></svg>
       Airlines
     </button>
+    <button class="bnav-btn" data-tab="aircraft" aria-label="Aircraft">
+      <svg viewBox="0 0 24 24"><path d="M3 14l8-2 2-8 2 1 1 7 5 3v2l-7-1-4 5-2-1 2-5-7 1z"/></svg>
+      Aircraft
+    </button>
     <button class="bnav-btn" data-tab="entry" aria-label="Data entry">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       Entry
@@ -383,30 +425,28 @@
       <input type="hidden" id="flightId">
       <div class="form-group">
         <label for="sDate">Date</label>
-        <div class="date-entry-controls">
-          <input id="sDate" type="date" required autocomplete="off">
-          <label class="date-year-control" for="sDateYear">Year
-            <input id="sDateYear" type="number" min="1000" max="9999" step="1" inputmode="numeric" aria-label="Enter year directly" autocomplete="off">
-          </label>
-        </div>
+        <input id="sDate" type="date" required autocomplete="off">
       </div>
       <div class="form-group">
         <label for="sDep">Departure</label>
-        <input id="sDep" maxlength="4" required placeholder="AMS" autocomplete="off" autocapitalize="characters">
+        <input id="sDep" maxlength="4" required placeholder="AMS" list="airportSuggestions" autocomplete="on" autocapitalize="none" spellcheck="false">
       </div>
       <div class="form-group">
         <label for="sArr">Arrival</label>
-        <input id="sArr" maxlength="4" required placeholder="PHL" autocomplete="off" autocapitalize="characters">
+        <input id="sArr" maxlength="4" required placeholder="PHL" list="airportSuggestions" autocomplete="on" autocapitalize="none" spellcheck="false">
         <div class="city-hint" id="arrivalCity"></div>
       </div>
       <div class="form-group">
         <label for="sAirline">Airline</label>
-        <input id="sAirline" placeholder="KLM" autocomplete="off">
+        <input id="sAirline" placeholder="KLM" list="airlineSuggestions" autocomplete="on">
       </div>
       <div class="form-group">
         <label for="sAircraft">Aircraft</label>
-        <input id="sAircraft" placeholder="B737" autocomplete="off">
+        <input id="sAircraft" placeholder="B737" list="aircraftSuggestions" autocomplete="on">
       </div>
+      <datalist id="airportSuggestions"></datalist>
+      <datalist id="airlineSuggestions"></datalist>
+      <datalist id="aircraftSuggestions"></datalist>
     </form>
     <div class="sheet-actions">
       <button type="submit" form="flightForm">Save</button>
@@ -422,7 +462,7 @@
       Import <input id="importJson" type="file" accept=".json,.ndjson,.txt,application/json,application/x-ndjson">
     </label>
     <button id="saveData" title="Save data files">Save</button>
-    <button id="exportJson" title="Download a combined JSON backup">Export</button>
+    <button id="clearData" title="Clear all flights and airport records">Clear</button>
   </header>
 
   <!-- Stat chips -->
@@ -471,6 +511,13 @@
       <div class="agg-list" id="airlineList"></div>
     </section>
 
+    <section id="aircraft" class="panel">
+      <div class="search-bar-wrap">
+        <input id="aircraftSearch" type="search" placeholder="Search aircraft…" autocomplete="off">
+      </div>
+      <div class="agg-list" id="aircraftList"></div>
+    </section>
+
     <!-- Entry panel -->
     <section id="entry" class="panel">
       <div class="search-bar-wrap entry-search-wrap">
@@ -486,6 +533,7 @@
 
   <!-- shared data -->
   <script src="flight-core.js"></script>
+  <script src="flight-date-picker.js"></script>
   <script src="flight-store.js"></script>
   <script>
 
@@ -504,6 +552,7 @@
   } = core
 
   const $ = id => document.getElementById(id)
+  const flightDatePicker = window.FlightDatePicker.mount($('sDate'))
 
   // ── App state ─────────────────────────────────────────────────────────────
   let flights = []
@@ -524,13 +573,17 @@
   let _airportDetail = null
   let _countryDetail = null
   let _airlineDetail = null
+  let _aircraftDetail = null
   let _airportBreakdown = null
   let _countryBreakdown = null
   let _airlineBreakdown = null
+  let _aircraftBreakdown = null
 
   let _airportQuery = ''
   let _countryQuery = ''
   let _airlineQuery = ''
+  let _aircraftQuery = ''
+  let _aircraftSort = 'name'
 
   let _pendingDraft = null
   let _pendingLegacy = null
@@ -599,7 +652,7 @@
       { value: totals.airports, label: 'Airports', view: 'airports' },
       { value: totals.countries, label: 'Countries', view: 'countries' },
       { value: totals.airlines, label: 'Airlines', view: 'airlines' },
-      { value: totals.aircraft, label: 'Aircraft', view: '' },
+    { value: totals.aircraft, label: 'Aircraft', view: 'aircraft' },
     ]
     $('statCards').innerHTML = chips.map(chip => {
       const content = `<strong>${chip.value}</strong><span>${chip.label}</span>`
@@ -756,6 +809,9 @@
       } else if (mode === 'country') {
         sub = [flight.arrival, shortAirportName(arr.name), arr.city].filter(Boolean).join(' · ')
         meta = [flight.airline, flight.aircraft].filter(Boolean).join(' · ') || '—'
+      } else if (mode === 'aircraft') {
+        sub = [shortAirportName(dep.name), dep.city, '→', shortAirportName(arr.name), arr.city].filter(Boolean).join(' · ')
+        meta = `${flight.airline || 'Airline unavailable'} · ${flight.aircraft || 'Not available'}`
       } else {
         sub = [arr.city, arr.country].filter(Boolean).join(', ') || '—'
         meta = flight.aircraft || '—'
@@ -944,16 +1000,94 @@
       : '<p class="no-flights">No airlines match.</p>'
   }
 
+  function aircraftKey(group) { return group.known ? group.name : '__missing__' }
+
+  function aircraftCard(group) {
+    return `<button type="button" class="agg-card" data-aircraft="${aircraftKey(group)}">
+      <span class="agg-main"><span class="agg-title">${esc(group.displayName)}</span>
+      <span class="agg-sub">${group.count} flights</span></span><span class="agg-count">${group.count}</span>
+    </button>`
+  }
+
+  function aircraftSortControls() {
+    return `<div class="aircraft-sort-row" aria-label="Sort aircraft">
+      <button type="button" data-aircraft-sort="name" class="${_aircraftSort === 'name' ? 'active' : ''}">Aircraft</button>
+      <button type="button" data-aircraft-sort="flights" class="${_aircraftSort === 'flights' ? 'active' : ''}">Flights</button>
+    </div>`
+  }
+
+  function renderAircraftView() {
+    const container = $('aircraftList')
+    if (_aircraftDetail) {
+      if (_aircraftBreakdown) {
+        const flight = flights.find(f => f.id === _aircraftBreakdown)
+        if (flight) {
+          container.innerHTML = `<button type="button" class="detail-back" data-breakdown-back>← Back to ${esc(_aircraftDetail === '__missing__' ? 'Not available' : _aircraftDetail)}</button>${flightDetailCard(flight)}`
+          return
+        }
+        _aircraftBreakdown = null
+      }
+      const group = _agg.byAircraft.find(row => aircraftKey(row) === _aircraftDetail)
+      if (!group) { _aircraftDetail = null; renderAircraftView(); return }
+      const rows = flightsForIds(flights, group.flightIds)
+      container.innerHTML = viewBack('Aircraft', 'aircraft') + `
+        <div class="agg-detail-head"><div class="agg-detail-title">${esc(group.displayName)}</div>
+        <div class="agg-detail-sub">${group.count} flights</div>
+        ${detailStats([{ value: group.count, label: 'flights' }])}</div>` + breakdownCards(rows, 'aircraft', group.name)
+      return
+    }
+    const rows = _agg.byAircraft.filter(group => matches(group.displayName, _aircraftQuery))
+      .sort(_aircraftSort === 'flights'
+        ? (a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName)
+        : (a, b) => a.displayName.localeCompare(b.displayName))
+    container.innerHTML = aircraftSortControls() + (rows.length
+      ? rows.map(aircraftCard).join('')
+      : '<p class="no-flights">No aircraft match.</p>')
+  }
+
   // ── Render all ────────────────────────────────────────────────────────────
   function renderAll() {
     _agg = core.aggregate(flights, airports)
     renderStats()
+    renderEntrySuggestions()
     renderYearPills()
     renderDashCards()
     renderEntryCards($('entrySearch').value)
     renderAirportView()
     renderCountryView()
     renderAirlineView()
+    renderAircraftView()
+  }
+
+  function renderEntrySuggestions() {
+    const airportsByCode = new Map()
+    for (const airport of airports) {
+      const code = normCode(airport.iata)
+      if (code) airportsByCode.set(code, [airport.name, airport.city, airport.country].filter(Boolean).join(' · '))
+    }
+    for (const flight of flights) {
+      for (const code of [normCode(flight.departure), normCode(flight.arrival)]) {
+        if (code && !airportsByCode.has(code)) airportsByCode.set(code, '')
+      }
+    }
+
+    const airlines = new Map()
+    const aircraftTypes = new Map()
+    for (const flight of flights) {
+      const airline = normText(flight.airline)
+      const aircraft = normText(flight.aircraft)
+      if (airline && !airlines.has(airline.toLocaleLowerCase())) airlines.set(airline.toLocaleLowerCase(), airline)
+      if (aircraft && !aircraftTypes.has(aircraft.toLocaleLowerCase())) aircraftTypes.set(aircraft.toLocaleLowerCase(), aircraft)
+    }
+
+    const fill = (id, values) => {
+      $(id).innerHTML = values.map(([value, label]) =>
+        `<option value="${esc(value)}"${label ? ` label="${esc(label)}"` : ''}></option>`
+      ).join('')
+    }
+    fill('airportSuggestions', [...airportsByCode.entries()].sort(([a], [b]) => a.localeCompare(b)))
+    fill('airlineSuggestions', [...airlines.values()].sort((a, b) => a.localeCompare(b)).map(value => [value, '']))
+    fill('aircraftSuggestions', [...aircraftTypes.values()].sort((a, b) => a.localeCompare(b)).map(value => [value, '']))
   }
 
   // ── Sheet helpers ─────────────────────────────────────────────────────────
@@ -962,8 +1096,7 @@
     const flight = _editId ? flights.find(x => x.id === _editId) : null
     $('sheetTitle').textContent = flight ? 'Edit flight' : 'Add flight'
     $('flightId').value = flight ? flight.id : ''
-    $('sDate').value = flight ? flight.date : ''
-    $('sDateYear').value = flight ? flight.date.slice(0, 4) : ''
+    flightDatePicker.set(flight ? flight.date : '')
     $('sDep').value = flight ? flight.departure : ''
     $('sArr').value = flight ? flight.arrival : ''
     $('sAirline').value = flight ? flight.airline : ''
@@ -1143,6 +1276,20 @@
     setStatus('Import undone — save to update data/', 'warn')
   }
 
+  function clearData() {
+    if (!flights.length && !airports.length) {
+      setStatus('The page is already empty.', 'ok')
+      return
+    }
+    const confirmed = confirm(
+      `Clear ${flights.length} flights and ${airports.length} airport records from this page?\n\n` +
+      'The NDJSON file will only be replaced if you press Save.'
+    )
+    if (!confirmed) return
+    adoptData([], [], { dirty: true, airportsChanged: true, source: 'clear' })
+    setStatus('Page cleared · press Save to replace the NDJSON file with empty data.', 'warn')
+  }
+
   // ── Events ────────────────────────────────────────────────────────────────
   function wireEvents() {
     $('yearSort').addEventListener('change', event => {
@@ -1156,6 +1303,12 @@
 
     // All navigation inside the aggregate/detail views
     document.addEventListener('click', event => {
+      const aircraftSort = event.target.closest('[data-aircraft-sort]')
+      if (aircraftSort) {
+        _aircraftSort = aircraftSort.dataset.aircraftSort
+        renderAircraftView()
+        return
+      }
       const viewButton = event.target.closest('[data-view]')
       if (viewButton) { switchTab(viewButton.dataset.view); return }
 
@@ -1208,6 +1361,14 @@
         return
       }
 
+      const aircraftCardEl = event.target.closest('[data-aircraft]')
+      if (aircraftCardEl) {
+        _aircraftDetail = aircraftCardEl.dataset.aircraft
+        _aircraftBreakdown = null
+        renderAll()
+        return
+      }
+
       const jumpAirport = event.target.closest('[data-jump-airport]')
       if (jumpAirport) {
         _airportDetail = jumpAirport.dataset.jumpAirport
@@ -1223,6 +1384,7 @@
         if (event.target.closest('#airportList')) _airportBreakdown = id
         else if (event.target.closest('#countryList')) _countryBreakdown = id
         else if (event.target.closest('#airlineList')) _airlineBreakdown = id
+        else if (event.target.closest('#aircraftList')) _aircraftBreakdown = id
         renderAll()
         return
       }
@@ -1231,6 +1393,7 @@
         if (event.target.closest('#airportList')) _airportBreakdown = null
         if (event.target.closest('#countryList')) _countryBreakdown = null
         if (event.target.closest('#airlineList')) _airlineBreakdown = null
+        if (event.target.closest('#aircraftList')) _aircraftBreakdown = null
         renderAll()
         return
       }
@@ -1240,6 +1403,7 @@
         if (backView.dataset.backView === 'airports') { _airportDetail = null; _airportBreakdown = null }
         if (backView.dataset.backView === 'countries') { _countryDetail = null; _countryBreakdown = null }
         if (backView.dataset.backView === 'airlines') { _airlineDetail = null; _airlineBreakdown = null }
+        if (backView.dataset.backView === 'aircraft') { _aircraftDetail = null; _aircraftBreakdown = null }
         renderAll()
         return
       }
@@ -1254,6 +1418,12 @@
 
     // Arrival city hint
     $('sArr').addEventListener('input', updateCityHint)
+    for (const id of ['sDep', 'sArr']) {
+      $(id).addEventListener('change', event => {
+        event.target.value = normCode(event.target.value)
+        if (id === 'sArr') updateCityHint()
+      })
+    }
 
     $('flightForm').addEventListener('focusin', event => {
       if (event.target.matches('input')) {
@@ -1272,10 +1442,25 @@
     })
 
     // Form submit
+    $('flightForm').addEventListener('keydown', event => {
+      if (event.key === 'Enter') event.preventDefault()
+    })
+    $('flightForm').addEventListener('click', event => {
+      if (event.detail > 0 && event.target.closest('button[type="submit"]')) $('flightForm').dataset.explicitSave = 'true'
+    })
     $('flightForm').addEventListener('submit', async event => {
       event.preventDefault()
+      if ($('flightForm').dataset.explicitSave !== 'true') return
+      $('flightForm').dataset.explicitSave = ''
+      if (!flightDatePicker.get()) {
+        flightDatePicker.setInvalid(true)
+        flightDatePicker.focus()
+        return
+      }
       const dep = normCode($('sDep').value)
       const arr = normCode($('sArr').value)
+      $('sDep').value = dep
+      $('sArr').value = arr
       await ensureAirport(dep)
       await ensureAirport(arr)
       const id = $('flightId').value || core.makeId()
@@ -1313,19 +1498,11 @@
       _airlineQuery = event.target.value
       renderAirlineView()
     })
+    $('aircraftSearch').addEventListener('input', event => {
+      _aircraftQuery = event.target.value
+      renderAircraftView()
+    })
 
-    $('sDate').addEventListener('input', event => {
-      $('sDateYear').value = event.target.value.slice(0, 4)
-    })
-    $('sDateYear').addEventListener('change', event => {
-      const updated = core.dateInYear($('sDate').value, event.target.value)
-      if (updated) {
-        $('sDate').value = updated
-        event.target.value = updated.slice(0, 4)
-      } else {
-        event.target.value = $('sDate').value.slice(0, 4)
-      }
-    })
 
     // Status actions
     $('fileStatus').addEventListener('click', event => {
@@ -1335,14 +1512,9 @@
       if (action && typeof action.fn === 'function') action.fn()
     })
 
-    // Save / export / import
+    // Save / clear / import
     $('saveData').addEventListener('click', saveToFile)
-
-    $('exportJson').addEventListener('click', () => {
-      const payload = JSON.stringify({ flights, airports }, null, 2)
-      store.download('flights-backup.json', payload + '\n', 'application/json;charset=utf-8')
-      setStatus('Downloaded flights-backup.json', 'ok')
-    })
+    $('clearData').addEventListener('click', clearData)
 
     $('importJson').addEventListener('change', async event => {
       const file = event.target.files[0]
